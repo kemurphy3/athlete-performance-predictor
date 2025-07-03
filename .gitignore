@@ -1,0 +1,18 @@
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.env
+*.ipynb_checkpoints
+
+# Models and data
+models/
+data/processed/
+data/raw/
+
+# Streamlit
+.streamlit/
+
+# Others
+.DS_Store
