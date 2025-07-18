@@ -55,23 +55,17 @@ db = FAISS.from_documents(docs, embedding)
 
 # Set up access to LLM
 print("Establishing connection to LLM")
-# llm = HuggingFaceEndpoint(
-#     # repo_id="google/flan-ul2",
-#     # task="text2text-generation",
-#     repo_id="google/flan-t5-base",
-#     task="text2text-generation",
-#     huggingfacehub_api_token=os.getenv("HUGGINGFACEHUB_API_TOKEN"),
-#     temperature=0.3,
-#     max_new_tokens=128,
-# )
-
 llm = HuggingFaceEndpoint(
+    # repo_id="google/flan-ul2",
+    # task="text2text-generation",
     repo_id="google/flan-t5-base",
     task="text2text-generation",
     huggingfacehub_api_token=os.getenv("HUGGINGFACEHUB_API_TOKEN"),
-    model_kwargs={
-        "temperature": 0.3,
-        "max_new_tokens": 128,},)
+    temperature=0.3,
+    max_new_tokens=128,
+)
+
+
 
 
 
