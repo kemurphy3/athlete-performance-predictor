@@ -1,0 +1,10 @@
+# VeSync API Credentials
+# Copy this file to .env and fill in your actual credentials
+VESYNC_USERNAME=your_vesync_email@example.com
+VESYNC_PASSWORD=your_vesync_password
+VESYNC_TIMEZONE=America/Denver
+
+# Strava API Credentials (if not already configured)
+STRAVA_CLIENT_ID=your_strava_client_id
+STRAVA_CLIENT_SECRET=your_strava_client_secret
+STRAVA_REFRESH_TOKEN=your_strava_refresh_token

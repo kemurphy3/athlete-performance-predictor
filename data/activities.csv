@@ -1,4 +1,10 @@
 date,name,type,distance_miles,duration_min,pace_per_mile
+2025-07-23 06:31:51,Spin Class w Blaise,Ride,0.0,51.5,N/A
+2025-07-21 20:44:23,Indoor v Barbies,Soccer,2.02,48.5,24:02 per mile
+2025-07-21 05:37:40,Row Machine,Rowing,0.0,27.8,N/A
+2025-07-20 08:04:29,Ignite v Rovers,Soccer,2.81,68.5,24:23 per mile
+2025-07-19 13:38:40,Ignite v Vista Bahn,Soccer,2.58,67.7,26:15 per mile
+2025-07-19 08:35:32,Ignite v FC Denver,Soccer,2.86,69.8,24:23 per mile
 2025-07-16 05:09:51,Legs,WeightTraining,0.0,77.8,N/A
 2025-07-15 11:04:17,Walk w Finn,Walk,1.23,30.2,24:35 per mile
 2025-07-15 05:24:15,Chest,WeightTraining,0.0,68.4,N/A
@@ -43,9 +49,3 @@ date,name,type,distance_miles,duration_min,pace_per_mile
 2025-06-07 10:39:11,Ignite v Madafakas Tourney,Soccer,2.6,68.8,26:28 per mile
 2025-06-07 08:16:46,Ignite v Timbers Tourney,Soccer,2.26,55.6,24:35 per mile
 2025-06-04 11:14:47,Walk w Finn,Walk,1.23,30.5,24:47 per mile
-2025-06-04 05:16:21,Upper Body Weights,WeightTraining,0.0,93.0,N/A
-2025-06-03 19:10:59,Evening Run,Run,2.69,25.7,9:32 per mile
-2025-06-02 21:31:39,Indoor v Barbies,Soccer,2.86,47.8,16:42 per mile
-2025-06-01 15:05:41,Ignite v Harpos White - Semis,Soccer,3.66,94.2,25:43 per mile
-2025-05-28 10:28:52,Walk w Finn,Walk,1.26,30.5,24:10 per mile
-2025-05-25 09:50:12,Badin Lake Jog,Run,1.63,15.7,9:37 per mile
