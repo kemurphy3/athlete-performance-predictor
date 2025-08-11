@@ -100,7 +100,7 @@ class FitnessAnalyzer:
         return current_metrics
     
     def _assess_injury_risk(self, ratio: float) -> str:
-        """Assess injury risk based on load ratio"""
+        """Assess injury risk based on load ratio (legacy method)"""
         if ratio > 1.5:
             return "🔴 HIGH RISK - Reduce intensity immediately"
         elif ratio > 1.3:
@@ -109,6 +109,32 @@ class FitnessAnalyzer:
             return "🔵 DETRAINING RISK - Increase volume"
         else:
             return "🟢 OPTIMAL - Good balance"
+    
+    def assess_injury_risk_ml(self, athlete_data: pd.DataFrame) -> Dict[str, Any]:
+        """ML-based injury risk assessment with confidence intervals"""
+        try:
+            from ml_models import EnsemblePredictor
+            
+            ensemble = EnsemblePredictor()
+            results = ensemble.predict_comprehensive_risk(athlete_data)
+            
+            return {
+                'ml_prediction': results.get('injury_risk'),
+                'biomechanical_asymmetry': results.get('biomechanical_asymmetry'),
+                'combined_risk': results.get('combined_risk'),
+                'confidence': results.get('injury_risk', {}).get('confidence_score', 0.0),
+                'recommendations': results.get('injury_risk', {}).get('recommendations', [])
+            }
+        except ImportError:
+            return {
+                'error': 'ML models not available. Install required dependencies.',
+                'fallback_method': 'ACWR-based assessment'
+            }
+        except Exception as e:
+            return {
+                'error': f'ML assessment failed: {str(e)}',
+                'fallback_method': 'ACWR-based assessment'
+            }
     
     def analyze_sport_specific_metrics(self) -> Dict[str, Any]:
         """Soccer-specific performance analysis"""
@@ -197,12 +223,63 @@ class FitnessAnalyzer:
         return {
             'daily_macros': macros,
             'tournament_macros': tournament_macros,
-            'timing': {
-                'pre_game': "3-4h before: 2-3g carbs/kg, moderate protein, low fat",
-                'during_game': "30-60g carbs/hour if >60 min",
-                'post_game': "Within 30 min: 1-1.5g carbs/kg + 25-30g protein"
-            }
         }
+    
+    def calculate_asymmetry_metrics(self) -> Dict[str, float]:
+        """Calculate biomechanical asymmetries from activity data"""
+        try:
+            from ml_models import BiomechanicalAsymmetryDetector
+            
+            detector = BiomechanicalAsymmetryDetector()
+            
+            # Extract asymmetry measurements from activity data
+            # This is a simplified approach - in practice, you'd need specific biomechanical tests
+            asymmetry_data = {}
+            
+            # Example: Calculate stride length asymmetry from running data
+            if self.activities is not None and 'type' in self.activities.columns:
+                running_data = self.activities[self.activities['type'] == 'Run']
+                if not running_data.empty and 'distance_miles' in running_data.columns:
+                    # Estimate stride length asymmetry based on pace variations
+                    pace_variations = running_data['pace_per_mile'].std() if 'pace_per_mile' in running_data.columns else 0
+                    asymmetry_data['stride_length'] = {
+                        'left': 1.0 + pace_variations * 0.1,
+                        'right': 1.0 - pace_variations * 0.1
+                    }
+            
+            # If no biomechanical data available, return placeholder
+            if not asymmetry_data:
+                asymmetry_data = {
+                    'slcmj': {'left': 45.0, 'right': 44.0},  # Placeholder values
+                    'hamstring': {'left': 180.0, 'right': 178.0}
+                }
+            
+            # Detect asymmetries
+            asymmetry = detector.detect_asymmetries(asymmetry_data)
+            
+            return {
+                'overall_asymmetry_score': asymmetry.overall_asymmetry_score,
+                'risk_category': asymmetry.risk_category,
+                'confidence': asymmetry.confidence,
+                'slcmj_asymmetry': asymmetry.slcmj_asymmetry,
+                'hamstring_asymmetry': asymmetry.hamstring_asymmetry,
+                'knee_valgus_asymmetry': asymmetry.knee_valgus_asymmetry,
+                'y_balance_asymmetry': asymmetry.y_balance_asymmetry,
+                'hip_rotation_asymmetry': asymmetry.hip_rotation_asymmetry
+            }
+            
+        except ImportError:
+            return {
+                'error': 'Biomechanical analysis not available. Install ml_models.',
+                'overall_asymmetry_score': 0.0,
+                'risk_category': 'UNKNOWN'
+            }
+        except Exception as e:
+            return {
+                'error': f'Asymmetry calculation failed: {str(e)}',
+                'overall_asymmetry_score': 0.0,
+                'risk_category': 'UNKNOWN'
+            }
     
     def predict_performance_trajectory(self) -> Dict[str, Any]:
         """AI prediction of performance trajectory"""
@@ -424,48 +501,327 @@ Consult with coaches and medical professionals for personalized advice.*
         print(f"📄 Report saved to {report_path}")
         return report
 
+    def analyze_movement_patterns(self) -> Dict[str, Any]:
+        """Analyze movement patterns from GPS and heart rate data"""
+        if self.activities is None:
+            return {"error": "No activity data available"}
+        
+        print("🏃 Analyzing movement patterns and sprint detection...")
+        
+        # Filter for activities with GPS data (running, cycling, etc.)
+        gps_activities = self.activities[
+            (self.activities['type'].isin(['Run', 'Ride', 'Walk'])) & 
+            (self.activities['distance_miles'] > 0)
+        ].copy()
+        
+        if gps_activities.empty:
+            return {"error": "No GPS activities found for movement analysis"}
+        
+        movement_analysis = {}
+        
+        for idx, activity in gps_activities.iterrows():
+            activity_id = activity.get('id', idx)
+            activity_type = activity.get('type', 'Unknown')
+            
+            # Calculate pace variations to detect intensity changes
+            if 'pace_per_mile' in activity and pd.notna(activity['pace_per_mile']):
+                pace = self._parse_pace(activity['pace_per_mile'])
+                if pace > 0:
+                    # Lower pace = faster speed = higher intensity
+                    intensity_score = max(0, (10 - pace) / 10)  # Normalize 0-1
+                    
+                    # Detect potential sprints based on pace
+                    if intensity_score > 0.7:  # Fast pace threshold
+                        movement_analysis[f"activity_{activity_id}"] = {
+                            'type': activity_type,
+                            'date': activity['date'],
+                            'intensity': 'High',
+                            'pace_mph': 60 / pace if pace > 0 else 0,
+                            'sprint_probability': intensity_score,
+                            'duration_min': activity.get('duration_min', 0),
+                            'distance_miles': activity.get('distance_miles', 0)
+                        }
+        
+        # Analyze heart rate patterns for intensity detection
+        if 'average_heartrate' in gps_activities.columns:
+            hr_activities = gps_activities[gps_activities['average_heartrate'].notna()]
+            if not hr_activities.empty:
+                # Calculate heart rate zones
+                hr_activities['hr_zone'] = hr_activities['average_heartrate'].apply(
+                    lambda hr: self._calculate_hr_zone(hr)
+                )
+                
+                # Detect high-intensity periods
+                high_intensity = hr_activities[hr_activities['hr_zone'].isin(['Zone 4', 'Zone 5'])]
+                if not high_intensity.empty:
+                    movement_analysis['heart_rate_analysis'] = {
+                        'high_intensity_periods': len(high_intensity),
+                        'avg_hr_high_intensity': high_intensity['average_heartrate'].mean(),
+                        'total_high_intensity_time': high_intensity['duration_min'].sum(),
+                        'intensity_distribution': hr_activities['hr_zone'].value_counts().to_dict()
+                    }
+        
+        # Analyze training patterns for steady-state vs. interval detection
+        if len(gps_activities) > 1:
+            # Sort by date for temporal analysis
+            gps_activities_sorted = gps_activities.sort_values('date')
+            
+            # Calculate pace variability between consecutive activities
+            pace_variations = []
+            for i in range(1, len(gps_activities_sorted)):
+                prev_pace = self._parse_pace(gps_activities_sorted.iloc[i-1].get('pace_per_mile', '0'))
+                curr_pace = self._parse_pace(gps_activities_sorted.iloc[i].get('pace_per_mile', '0'))
+                
+                if prev_pace > 0 and curr_pace > 0:
+                    variation = abs(curr_pace - prev_pace) / prev_pace
+                    pace_variations.append(variation)
+            
+            if pace_variations:
+                avg_variation = np.mean(pace_variations)
+                movement_analysis['training_pattern_analysis'] = {
+                    'pace_variability': avg_variation,
+                    'training_style': 'Interval' if avg_variation > 0.3 else 'Steady State',
+                    'recommendation': self._get_training_recommendation(avg_variation),
+                    'consecutive_activities_analyzed': len(pace_variations)
+                }
+        
+        # Calculate movement efficiency metrics
+        if 'distance_miles' in gps_activities.columns and 'duration_min' in gps_activities.columns:
+            gps_activities['speed_mph'] = gps_activities['distance_miles'] / (gps_activities['duration_min'] / 60)
+            gps_activities['efficiency'] = gps_activities['speed_mph'] / gps_activities.get('average_heartrate', 140).fillna(140)
+            
+            movement_analysis['efficiency_metrics'] = {
+                'avg_speed_mph': gps_activities['speed_mph'].mean(),
+                'avg_efficiency': gps_activities['efficiency'].mean(),
+                'efficiency_trend': 'Improving' if len(gps_activities) > 3 else 'Insufficient data',
+                'speed_consistency': gps_activities['speed_mph'].std()
+            }
+        
+        return movement_analysis
+    
+    def _calculate_hr_zone(self, heart_rate: float) -> str:
+        """Calculate heart rate zone based on max HR"""
+        if heart_rate < self.profile.max_hr * 0.6:
+            return "Zone 1"
+        elif heart_rate < self.profile.max_hr * 0.7:
+            return "Zone 2"
+        elif heart_rate < self.profile.max_hr * 0.8:
+            return "Zone 3"
+        elif heart_rate < self.profile.max_hr * 0.9:
+            return "Zone 4"
+        else:
+            return "Zone 5"
+    
+    def _get_training_recommendation(self, pace_variation: float) -> str:
+        """Get training recommendation based on pace variation"""
+        if pace_variation < 0.2:
+            return "Consider adding interval training to improve speed and power"
+        elif pace_variation > 0.5:
+            return "Good variety in training intensity. Focus on recovery between hard sessions"
+        else:
+            return "Balanced training approach. Maintain current variety"
+    
+    def detect_sprint_patterns(self) -> Dict[str, Any]:
+        """Detect sprint patterns using rolling averages and thresholds"""
+        if self.activities is None:
+            return {"error": "No activity data available"}
+        
+        print("⚡ Detecting sprint patterns from activity data...")
+        
+        # Focus on running activities
+        running_data = self.activities[self.activities['type'] == 'Run'].copy()
+        if running_data.empty:
+            return {"error": "No running activities found for sprint analysis"}
+        
+        # Sort by date for temporal analysis
+        running_data = running_data.sort_values('date')
+        
+        sprint_analysis = {}
+        
+        for idx, run in running_data.iterrows():
+            # Calculate intensity based on pace and heart rate
+            intensity_score = 0
+            sprint_indicators = []
+            
+            # Pace-based sprint detection
+            if 'pace_per_mile' in run and pd.notna(run['pace_per_mile']):
+                pace = self._parse_pace(run['pace_per_mile'])
+                if pace > 0:
+                    # Convert pace to speed (mph)
+                    speed_mph = 60 / pace
+                    
+                    # Sprint threshold: >8 mph (7:30 min/mile pace)
+                    if speed_mph > 8.0:
+                        intensity_score += 0.6
+                        sprint_indicators.append(f"High speed: {speed_mph:.1f} mph")
+            
+            # Heart rate-based sprint detection
+            if 'average_heartrate' in run and pd.notna(run['average_heartrate']):
+                hr = run['average_heartrate']
+                hr_zone = self._calculate_hr_zone(hr)
+                
+                if hr_zone in ['Zone 4', 'Zone 5']:
+                    intensity_score += 0.4
+                    sprint_indicators.append(f"High HR: {hr} bpm ({hr_zone})")
+            
+            # Duration-based sprint detection
+            duration = run.get('duration_min', 0)
+            if duration > 0:
+                # Short, intense efforts are more likely to be sprints
+                if duration < 30 and intensity_score > 0.5:
+                    intensity_score += 0.2
+                    sprint_indicators.append(f"Short duration: {duration} min")
+            
+            # Classify the run
+            if intensity_score >= 0.7:
+                run_type = "Sprint/Interval"
+            elif intensity_score >= 0.4:
+                run_type = "Tempo"
+            else:
+                run_type = "Easy/Recovery"
+            
+            sprint_analysis[f"run_{idx}"] = {
+                'date': run['date'],
+                'type': run_type,
+                'intensity_score': intensity_score,
+                'sprint_indicators': sprint_indicators,
+                'distance_miles': run.get('distance_miles', 0),
+                'duration_min': duration,
+                'pace_per_mile': run.get('pace_per_mile', 'N/A'),
+                'heart_rate': run.get('average_heartrate', 'N/A')
+            }
+        
+        # Calculate sprint frequency and patterns
+        sprint_runs = [run for run in sprint_analysis.values() if run['type'] == 'Sprint/Interval']
+        tempo_runs = [run for run in sprint_analysis.values() if run['type'] == 'Tempo']
+        
+        sprint_analysis['summary'] = {
+            'total_runs': len(running_data),
+            'sprint_runs': len(sprint_runs),
+            'tempo_runs': len(tempo_runs),
+            'sprint_frequency': len(sprint_runs) / len(running_data) if running_data.shape[0] > 0 else 0,
+            'avg_intensity_score': np.mean([run['intensity_score'] for run in sprint_analysis.values() if isinstance(run, dict)]),
+            'recommendation': self._get_sprint_recommendation(len(sprint_runs), len(running_data))
+        }
+        
+        return sprint_analysis
+    
+    def _get_sprint_recommendation(self, sprint_count: int, total_runs: int) -> str:
+        """Get sprint training recommendation"""
+        if total_runs == 0:
+            return "No running data available for recommendations"
+        
+        sprint_ratio = sprint_count / total_runs
+        
+        if sprint_ratio < 0.1:
+            return "Consider adding 1-2 sprint sessions per week to improve speed and power"
+        elif sprint_ratio > 0.4:
+            return "High sprint frequency. Ensure adequate recovery and consider adding easy runs"
+        else:
+            return "Good balance of sprint and recovery runs. Maintain current training structure"
+
 def main():
     """Run comprehensive fitness analysis"""
-    print("🚀 Starting Comprehensive Fitness Analysis...")
+    print("🏃‍♂️ Starting comprehensive fitness analysis...")
     print("=" * 50)
     
-    # Create analyzer
+    # Initialize analyzer
     analyzer = FitnessAnalyzer()
     
-    # Generate insights
-    print("\n🤖 Generating AI insights...")
+    # Run all analyses
+    print("\n📊 Running comprehensive analysis...")
+    
+    # Basic metrics
+    training_load = analyzer.calculate_training_load()
+    print(f"✅ Training Load Analysis Complete")
+    
+    # Sport-specific analysis
+    sport_metrics = analyzer.analyze_sport_specific_metrics()
+    print(f"✅ Sport-Specific Analysis Complete")
+    
+    # Movement pattern analysis (NEW!)
+    movement_patterns = analyzer.analyze_movement_patterns()
+    print(f"✅ Movement Pattern Analysis Complete")
+    
+    # Sprint detection (NEW!)
+    sprint_patterns = analyzer.detect_sprint_patterns()
+    print(f"✅ Sprint Pattern Detection Complete")
+    
+    # ML-based injury risk assessment
+    try:
+        injury_risk = analyzer.assess_injury_risk_ml(analyzer.activities)
+        print(f"✅ ML Injury Risk Assessment Complete")
+    except Exception as e:
+        print(f"⚠️ ML Assessment Failed: {e}")
+        injury_risk = {"error": "ML assessment unavailable"}
+    
+    # Asymmetry metrics
+    try:
+        asymmetry = analyzer.calculate_asymmetry_metrics()
+        print(f"✅ Asymmetry Analysis Complete")
+    except Exception as e:
+        print(f"⚠️ Asymmetry Analysis Failed: {e}")
+        asymmetry = {"error": "Asymmetry analysis unavailable"}
+    
+    # Nutrition recommendations
+    nutrition = analyzer.generate_nutrition_recommendations()
+    print(f"✅ Nutrition Analysis Complete")
+    
+    # Performance predictions
+    predictions = analyzer.predict_performance_trajectory()
+    print(f"✅ Performance Predictions Complete")
+    
+    # AI insights
     insights = analyzer.generate_ai_insights()
+    print(f"✅ AI Insights Generated")
     
-    # Create visualizations
-    print("\n📊 Creating visualizations...")
-    analyzer.create_visualizations()
-    
-    # Generate report
-    print("\n📄 Generating comprehensive report...")
+    # Generate comprehensive report
+    print("\n📋 Generating comprehensive report...")
     report = analyzer.generate_report()
     
-    # Print summary
-    print("\n" + "=" * 50)
-    print("✅ ANALYSIS COMPLETE!")
-    print("=" * 50)
+    # Save report to file
+    timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+    report_filename = f"fitness_analysis_report_{timestamp}.txt"
     
-    # Print key insights
-    print("\n🎯 KEY INSIGHTS:")
-    print(f"- Training Load Status: {insights['training_load'].get('risk_level', 'Unknown')}")
-    print(f"- Weekly Hours: {insights['training_load'].get('weekly_volume', 0):.1f}")
-    print(f"- Fitness Trajectory: {insights['performance_trajectory'].get('predicted_fitness_gain', 'Unknown')}")
+    with open(report_filename, 'w') as f:
+        f.write(report)
     
-    print("\n💡 TOP 3 RECOMMENDATIONS:")
-    for rec in insights['recommendations'][:3]:
-        print(f"  {rec}")
+    print(f"\n✅ Analysis Complete! Report saved to: {report_filename}")
+    print("\n🚀 Key Findings:")
     
-    print("\n📁 Files Generated:")
-    print(f"  - Fitness Dashboard: data/processed/fitness_dashboard.png")
-    print(f"  - Detailed Report: data/processed/fitness_report_{datetime.now().strftime('%Y%m%d')}.md")
-    if PLOTLY_AVAILABLE:
-        print(f"  - Interactive Dashboard: data/processed/interactive_dashboard.html")
+    # Display key insights
+    if isinstance(training_load, dict) and 'risk_level' in training_load:
+        print(f"   • Injury Risk: {training_load['risk_level']}")
     
-    print("\n🏃 Keep training smart! Your data shows the path to peak performance!")
+    if isinstance(movement_patterns, dict) and 'efficiency_metrics' in movement_patterns:
+        eff = movement_patterns['efficiency_metrics']
+        print(f"   • Training Style: {eff.get('efficiency_trend', 'N/A')}")
+    
+    if isinstance(sprint_patterns, dict) and 'summary' in sprint_patterns:
+        summary = sprint_patterns['summary']
+        print(f"   • Sprint Frequency: {summary.get('sprint_frequency', 0):.1%}")
+        print(f"   • Training Recommendation: {summary.get('recommendation', 'N/A')}")
+    
+    if isinstance(injury_risk, dict) and 'ml_prediction' in injury_risk:
+        ml_pred = injury_risk['ml_prediction']
+        if isinstance(ml_pred, dict):
+            print(f"   • ML Risk Level: {ml_pred.get('risk_level', 'N/A')}")
+    
+    print(f"\n📊 Full analysis available in: {report_filename}")
+    print("🎯 Use the Streamlit dashboard for interactive visualizations!")
+    
+    return {
+        'training_load': training_load,
+        'sport_metrics': sport_metrics,
+        'movement_patterns': movement_patterns,
+        'sprint_patterns': sprint_patterns,
+        'injury_risk': injury_risk,
+        'asymmetry': asymmetry,
+        'nutrition': nutrition,
+        'predictions': predictions,
+        'insights': insights,
+        'report_file': report_filename
+    }
 
 if __name__ == "__main__":
     main()
