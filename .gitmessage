@@ -1,0 +1,14 @@
+# Type: feat, fix, docs, style, refactor, test, chore
+# Scope: optional - component or file name
+# Subject: imperative mood, lowercase, no period at end
+
+# Body: explain what and why, not how
+# - Bullet points are okay
+# - Keep lines under 72 characters
+
+# Footer: references to issues, breaking changes
+# - Closes #123
+# - BREAKING CHANGE: description
+
+# This project uses AI-assisted development for efficiency
+# while maintaining full code ownership and understanding

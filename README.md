@@ -277,6 +277,17 @@ logging.basicConfig(level=logging.DEBUG)
 3. Add tests for new functionality
 4. Submit a pull request
 
+## 🛠️ Development Approach
+
+This project embraces modern development practices including:
+- **AI-Assisted Development**: Leveraging AI tools to accelerate development while maintaining code quality
+- **Research-Driven Implementation**: Direct implementation of peer-reviewed research papers
+- **Test-Driven Development**: Comprehensive test coverage ensuring reliability
+- **Continuous Integration**: Automated testing and deployment pipelines
+- **Open Source First**: Transparent development with community collaboration
+
+I believe in using the best tools available to deliver value efficiently. See [CONTRIBUTIONS.md](CONTRIBUTIONS.md) for detailed attribution.
+
 ## 📄 License
 
 This project is licensed under the MIT License - see the LICENSE file for details.
@@ -286,6 +297,7 @@ This project is licensed under the MIT License - see the LICENSE file for detail
 - VeSync for providing smart device APIs
 - Strava for comprehensive fitness data
 - The open-source community for data analysis libraries
+- Sports science researchers whose work informed this project
 
 ## 📞 Support
 
