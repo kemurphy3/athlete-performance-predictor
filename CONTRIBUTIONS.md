@@ -1,4 +1,4 @@
-# Project Contributions & Development Approach
+# ARCHIVED: Project Contributions & Development Approach
 
 ## Development Philosophy
 

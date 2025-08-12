@@ -1,10 +1,59 @@
-# VeSync API Credentials
-# Copy this file to .env and fill in your actual credentials
-VESYNC_USERNAME=your_vesync_email@example.com
-VESYNC_PASSWORD=your_vesync_password
-VESYNC_TIMEZONE=America/Denver
+# Copy this file to .env and fill in your actual values
+# Database Configuration
+DATABASE_URL=sqlite:///data/athlete_performance.db
 
-# Strava API Credentials (if not already configured)
-STRAVA_CLIENT_ID=your_strava_client_id
-STRAVA_CLIENT_SECRET=your_strava_client_secret
-STRAVA_REFRESH_TOKEN=your_strava_refresh_token
+# Sync Settings
+DEFAULT_SYNC_DAYS=30
+ENABLE_DEDUPLICATION=true
+LOG_LEVEL=INFO
+
+# Strava API Configuration
+STRAVA_CLIENT_ID=
+STRAVA_CLIENT_SECRET=
+STRAVA_REFRESH_TOKEN=
+
+# Garmin Connect Configuration
+GARMIN_USERNAME=
+GARMIN_PASSWORD=
+
+# Fitbit API Configuration
+FITBIT_CLIENT_ID=
+FITBIT_CLIENT_SECRET=
+FITBIT_ACCESS_TOKEN=
+FITBIT_REFRESH_TOKEN=
+
+# WHOOP API Configuration
+WHOOP_API_KEY=
+WHOOP_USER_ID=
+
+# Oura API Configuration
+OURA_ACCESS_TOKEN=
+
+# Withings API Configuration
+WITHINGS_CLIENT_ID=
+WITHINGS_CLIENT_SECRET=
+WITHINGS_ACCESS_TOKEN=
+WITHINGS_REFRESH_TOKEN=
+
+# VeSync Configuration (for existing integration)
+VESYNC_USERNAME=
+VESYNC_PASSWORD=
+VESYNC_TIMEZONE=America/New_York
+
+# Security Configuration
+ENCRYPTION_KEY=
+JWT_SECRET_KEY=
+
+# AI/ML Configuration
+ENABLE_AI_INSIGHTS=true
+AI_MODEL_PATH=models/
+OPENAI_API_KEY=  # Optional: for enhanced AI insights
+
+# Export Configuration
+DEFAULT_EXPORT_FORMAT=parquet
+EXPORT_DIRECTORY=exports/
+
+# Performance Configuration
+MAX_CONCURRENT_REQUESTS=5
+REQUEST_TIMEOUT=30
+RETRY_ATTEMPTS=3

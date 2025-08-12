@@ -1,4 +1,6 @@
 #!/usr/bin/env python3
+# ARCHIVED: This script has been replaced by the new CLI system
+# Use: python -m src.cli --help
 """
 Quick Start Script for Athlete Performance Predictor
 Provides immediate access to all features with clear guidance

@@ -1,118 +1,171 @@
-# 🚀 **Complete Usage Guide - Athlete Performance Predictor**
+# 🚀 **Complete Usage Guide - Multi-Source Fitness Data Platform**
 
-## **Quick Start - One-Click Analysis**
+## **Quick Start - New CLI System**
 
-### **🎯 The "Click and Go" Script**
-**File**: `analyze_my_fitness.py`  
-**Purpose**: Complete fitness analysis with one command  
-**Command**: `python analyze_my_fitness.py`
+### **🎯 The New Command-Line Interface**
+**Entry Point**: `python -m src.cli --help`  
+**Purpose**: Unified interface for all platform features  
+**Architecture**: Multi-source data ingestion with intelligent deduplication
 
 **What It Does**:
-- ✅ Loads all your Strava and VeSync data
-- ✅ Calculates training load and injury risk
-- ✅ Analyzes movement patterns and sprint detection
-- ✅ Generates ML-based predictions
-- ✅ Creates comprehensive report
-- ✅ Saves results to timestamped file
-
-**Output**: Complete analysis report with key insights and recommendations
+- ✅ Connects to multiple fitness data sources (Strava, Garmin, Fitbit, WHOOP, Oura, Withings)
+- ✅ Intelligently deduplicates overlapping workout and biometric records
+- ✅ Provides ML-based injury prediction and performance analysis
+- ✅ Exports clean data to Parquet, CSV, or feeds into analysis pipeline
+- ✅ Works with any subset of connectors configured
 
 ---
 
-## **📊 Interactive Dashboard**
+## **🔌 Data Source Connectors**
 
-### **🎨 Streamlit Dashboard**
-**File**: `streamlit_app.py`  
-**Purpose**: Interactive web interface for real-time analysis  
-**Command**: `streamlit run streamlit_app.py`
+### **📱 Available Data Sources**
+The platform supports multiple fitness data sources that can be configured independently:
 
-**Features**:
-- 📁 **File Upload**: Drag & drop your fitness data
-- 🔬 **Real-Time Analysis**: Live processing with progress bars
-- 📈 **Interactive Charts**: Zoom, pan, and hover on Plotly visualizations
-- 📋 **Export Options**: PDF reports, CSV data, Excel files
-- ⚙️ **Settings**: Customize analysis parameters
+#### **Strava API** (Required for existing functionality)
+- **What**: Running, cycling, swimming activities
+- **Setup**: OAuth2 authentication with client ID and secret
+- **Data**: GPS routes, heart rate, power, cadence, elevation
 
-**Navigation**:
-1. **📊 Dashboard**: Overview and quick stats
-2. **🔬 Analysis**: Detailed ML analysis and injury risk
-3. **📈 Visualizations**: Interactive charts and trends
-4. **📋 Reports**: Generate and export reports
-5. **⚙️ Settings**: Configure system preferences
+#### **Garmin Connect**
+- **What**: Comprehensive fitness and health data
+- **Setup**: Username/password or OAuth authentication
+- **Data**: Activities, biometrics, sleep, stress, body composition
 
----
+#### **Fitbit**
+- **What**: Activity tracking and health monitoring
+- **Setup**: OAuth2 with client ID and secret
+- **Data**: Steps, heart rate, sleep, exercise, nutrition
 
-## **🤖 Advanced ML Features**
+#### **WHOOP**
+- **What**: Advanced recovery and strain tracking
+- **Setup**: API key authentication
+- **Data**: Strain, recovery, sleep, HRV, respiratory rate
 
-### **🧠 Machine Learning Models**
-**File**: `ml_models.py`  
-**Purpose**: Advanced injury prediction and biomechanical analysis
+#### **Oura Ring**
+- **What**: Sleep and recovery optimization
+- **Setup**: Personal access token
+- **Data**: Sleep stages, readiness, activity, HRV
 
-**Key Capabilities**:
-- **Injury Risk Prediction**: Ensemble models (XGBoost, Random Forest, Gradient Boosting)
-- **Biomechanical Asymmetry**: Detects imbalances using research-based thresholds
-- **Confidence Intervals**: Bootstrap-based uncertainty quantification
-- **SHAP Explainability**: Understand why predictions are made
+#### **Withings**
+- **What**: Smart scales and health monitors
+- **Setup**: OAuth2 with client ID and secret
+- **Data**: Weight, body composition, blood pressure, sleep
 
-**Usage**: Automatically integrated into main analysis
-
----
-
-## **📡 Data Collection**
-
-### **📱 VeSync Integration**
-**File**: `vesync_data_collector.py`  
-**Purpose**: Collect data from smart scales, sleep trackers, and environmental sensors
-
-**What It Collects**:
-- ⚖️ **Body Composition**: Weight, body fat, muscle mass, hydration
-- 😴 **Sleep Data**: Duration, quality, deep/REM sleep
-- 🌡️ **Environmental**: Air quality, humidity, temperature
-
-**Command**: `python vesync_data_collector.py`
+#### **VeSync** (Legacy integration)
+- **What**: Smart scales and environmental sensors
+- **Setup**: Username/password authentication
+- **Data**: Body composition, air quality, temperature
 
 ---
 
-## **🔧 Step-by-Step Usage Workflow**
+## **⚙️ Configuration & Setup**
 
-### **Step 1: Initial Setup**
+### **Step 1: Environment Configuration**
 ```bash
-# Install dependencies
-pip install -r requirements.txt
+# Copy the template
+copy env_template.txt .env
 
-# Configure environment variables
-cp env_template.txt .env
-# Edit .env with your VeSync and Strava credentials
+# Edit .env with your API credentials
+# Only fill in the sources you want to use
 ```
 
-### **Step 2: Collect Data**
+### **Step 2: Required Credentials**
 ```bash
-# Collect VeSync data (smart scales, sleep, etc.)
-python vesync_data_collector.py
+# Minimum setup (Strava only)
+STRAVA_CLIENT_ID=your_strava_client_id
+STRAVA_CLIENT_SECRET=your_strava_client_secret
+STRAVA_REFRESH_TOKEN=your_strava_refresh_token
 
-# Your Strava data should already be in data/activities.csv
+# Optional: Add more sources as you get access
+GARMIN_USERNAME=your_garmin_username
+GARMIN_PASSWORD=your_garmin_password
+FITBIT_CLIENT_ID=your_fitbit_client_id
+WHOOP_API_KEY=your_whoop_api_key
+OURA_ACCESS_TOKEN=your_oura_token
 ```
 
-### **Step 3: Run Analysis**
+### **Step 3: Security Keys**
 ```bash
-# Option 1: One-click comprehensive analysis
-python analyze_my_fitness.py
+# Generate encryption key (32 bytes, base64 encoded)
+python -c "import base64; import os; print(base64.b64encode(os.urandom(32)).decode())"
 
-# Option 2: Interactive dashboard
-streamlit run streamlit_app.py
+# Generate JWT secret (32 bytes, hex encoded)
+python -c "import secrets; print(secrets.token_hex(32))"
 ```
 
-### **Step 4: Review Results**
-- 📄 **Text Report**: Generated automatically with timestamp
-- 📊 **Interactive Charts**: Available in Streamlit dashboard
-- 📈 **Export Options**: PDF, CSV, Excel formats
+---
+
+## **🚀 Core Commands**
+
+### **🔐 Authentication Management**
+```bash
+# List configured data sources
+python -m src.cli auth --list
+
+# Authenticate with specific source
+python -m src.cli auth garmin
+python -m src.cli auth fitbit
+python -m src.cli auth whoop
+```
+
+### **📡 Data Synchronization**
+```bash
+# Sync all configured sources
+python -m src.cli sync
+
+# Sync last 30 days
+python -m src.cli sync --days 30
+
+# Sync specific sources only
+python -m src.cli sync --source garmin,strava
+
+# Force refresh of all data
+python -m src.cli sync --force
+```
+
+### **🔬 Analysis & ML**
+```bash
+# Run comprehensive fitness analysis
+python -m src.cli analyze
+
+# Run analysis with specific plugin
+python -m src.cli analyze --plugin ball_sports
+
+# Custom date range analysis
+python -m src.cli analyze --start-date 2024-01-01 --end-date 2024-12-31
+```
+
+### **📤 Data Export**
+```bash
+# Export to Parquet (recommended)
+python -m src.cli export --format parquet
+
+# Export to CSV
+python -m src.cli export --format csv --output fitness_data.csv
+
+# Export specific data types
+python -m src.cli export --format parquet --type workouts
+python -m src.cli export --format parquet --type biometrics
+```
+
+### **📊 System Status**
+```bash
+# Check sync status and data summaries
+python -m src.cli status
+
+# View data source health
+python -m src.cli status --detailed
+
+# Check database statistics
+python -m src.cli status --database
+```
 
 ---
 
 ## **🎯 Feature-Specific Usage**
 
 ### **🏃 Movement Pattern Analysis**
-**New Feature**: Automatically detects sprint patterns and training style
+**New Feature**: Automatically detects sprint patterns and training style from GPS and heart rate data
 
 **What It Analyzes**:
 - **Sprint Detection**: Identifies high-intensity efforts using pace and heart rate
@@ -126,19 +179,6 @@ streamlit run streamlit_app.py
 3. **Duration Patterns**: Identifies short, intense efforts
 4. **Rolling Averages**: Smooths data to detect trends
 
-**Example Output**:
-```json
-{
-  "sprint_patterns": {
-    "summary": {
-      "sprint_frequency": "25%",
-      "training_style": "Interval",
-      "recommendation": "Good balance of sprint and recovery runs"
-    }
-  }
-}
-```
-
 ### **⚡ Sprint Pattern Detection**
 **Purpose**: Identify when you're doing high-intensity training
 
@@ -148,10 +188,20 @@ streamlit run streamlit_app.py
 3. **Duration Analysis**: Short, intense efforts
 4. **Combined Scoring**: Multi-factor intensity assessment
 
-**Recommendations**:
-- **Low Sprint Frequency**: Add 1-2 sprint sessions per week
-- **High Sprint Frequency**: Ensure adequate recovery
-- **Balanced**: Maintain current training structure
+### **🧠 ML Injury Prediction**
+**New Feature**: Ensemble-based injury risk assessment with confidence intervals
+
+**Models Used**:
+- **XGBoost**: High-performance gradient boosting
+- **Random Forest**: Robust ensemble method
+- **Gradient Boosting**: Additional ensemble diversity
+- **Ensemble Combination**: Weighted voting for final predictions
+
+**Features**:
+- **Biomechanical Asymmetry**: SLCMJ, hamstring, knee valgus, Y-balance, hip rotation
+- **Training Load**: Acute:Chronic Workload Ratio (ACWR) with ML enhancement
+- **Confidence Intervals**: Bootstrap-based uncertainty quantification
+- **SHAP Explainability**: Understand why predictions are made
 
 ---
 
@@ -165,9 +215,15 @@ streamlit run streamlit_app.py
 
 ### **Optimal Data for Best Results**
 - **Activities**: 3+ months of consistent data
-- **VeSync Integration**: Body composition and sleep tracking
+- **Multi-Source Integration**: Combine Strava + Garmin + Fitbit + WHOOP
 - **Heart Rate Zones**: Resting and max HR configured
 - **Activity Types**: Mix of running, cycling, and other sports
+
+### **Data Quality Features**
+- **Automatic Deduplication**: Removes overlapping records from multiple sources
+- **Data Validation**: Pydantic models ensure data integrity
+- **Quality Scoring**: Each record gets a 0-1 quality score
+- **Source Precedence**: Higher quality sources take priority when merging
 
 ---
 
@@ -175,36 +231,43 @@ streamlit run streamlit_app.py
 
 ### **Common Issues**
 
-**"No GPS activities found"**
-- Ensure activities have 'type' column with 'Run', 'Ride', or 'Walk'
-- Check that 'distance_miles' column exists and has values > 0
+**"No data sources configured"**
+- Check your `.env` file has at least one data source configured
+- Verify API credentials are correct
+- Test connection with `python -m src.cli auth --list`
+
+**"Authentication failed for [source]"**
+- Verify API credentials in `.env` file
+- Check if the service is experiencing downtime
+- Ensure your account has API access enabled
 
 **"ML assessment unavailable"**
-- Install required packages: `pip install xgboost shap scikit-learn`
+- Install required packages: `pip install -r requirements.txt`
 - Check that your data has sufficient features for ML analysis
+- Verify database connection and data availability
 
-**"VeSync connection failed"**
-- Verify credentials in `.env` file
-- Ensure devices are online in VeSync app
-- Check internet connection
+**"Database connection failed"**
+- Check if `data/` directory exists
+- Ensure SQLite is working on your system
+- Verify file permissions
 
 ### **Performance Issues**
 - **Slow Analysis**: Use smaller date ranges for initial testing
 - **Memory Issues**: Close other applications during analysis
-- **Dashboard Lag**: Reduce data size or use text analysis instead
+- **Sync Timeouts**: Increase timeout values in `.env` file
 
 ---
 
 ## **🎯 Best Practices**
 
 ### **For Optimal Results**
-1. **Regular Data Collection**: Run VeSync collector daily
-2. **Consistent Activity Logging**: Log all workouts in Strava
-3. **Heart Rate Monitoring**: Use HR monitor during activities
+1. **Regular Data Collection**: Run sync daily or weekly
+2. **Consistent Activity Logging**: Log all workouts in your primary platform
+3. **Multi-Source Integration**: Combine data from multiple sources for comprehensive analysis
 4. **Regular Analysis**: Run analysis weekly for trend tracking
 
 ### **Training Recommendations**
-1. **Monitor ACWR**: Keep acute:chronic workload ratio 0.8-1.3
+1. **Monitor Training Load**: Keep acute:chronic workload ratio 0.8-1.3
 2. **Recovery Tracking**: Pay attention to sleep and body composition
 3. **Sprint Training**: Include 1-2 sprint sessions per week
 4. **Asymmetry Monitoring**: Address imbalances before they become injuries
@@ -213,17 +276,30 @@ streamlit run streamlit_app.py
 
 ## **🔮 Advanced Usage**
 
+### **Plugin System**
+```bash
+# Enable ball sports analysis (soccer, basketball, etc.)
+python -m src.cli analyze --plugin ball_sports
+
+# Custom plugin development
+# Create plugins in src/plugins/ directory
+```
+
 ### **Custom Analysis**
 ```python
-from analyze_my_fitness import FitnessAnalyzer
+from src.core.data_ingestion import DataIngestionOrchestrator
+from src.ml.ml_models import InjuryRiskPredictor
 
-# Create custom analyzer
-analyzer = FitnessAnalyzer()
+# Create orchestrator
+orchestrator = DataIngestionOrchestrator()
 
-# Run specific analyses
-movement_patterns = analyzer.analyze_movement_patterns()
-sprint_patterns = analyzer.detect_sprint_patterns()
-injury_risk = analyzer.assess_injury_risk_ml(analyzer.activities)
+# Get your data
+workouts = orchestrator.get_workouts()
+biometrics = orchestrator.get_biometrics()
+
+# Run custom analysis
+predictor = InjuryRiskPredictor()
+risk_assessment = predictor.predict_injury_risk(workouts, biometrics)
 ```
 
 ### **Integration with Other Tools**
@@ -243,18 +319,35 @@ injury_risk = analyzer.assess_injury_risk_ml(analyzer.activities)
 4. **Review Logs**: Detailed logging for troubleshooting
 
 ### **Next Steps**
-1. **Start Simple**: Use `analyze_my_fitness.py` first
-2. **Explore Dashboard**: Try Streamlit for interactive experience
-3. **Customize Profile**: Update athlete profile in the script
+1. **Start Simple**: Use `python -m src.cli sync` first
+2. **Explore Analysis**: Try `python -m src.cli analyze` for insights
+3. **Add Sources**: Gradually add more data sources as you get access
 4. **Regular Analysis**: Make this part of your training routine
 
 ---
 
 ## **🎉 You're Ready!**
 
-**Start Here**: `python analyze_my_fitness.py`  
-**Explore More**: `streamlit run streamlit_app.py`  
-**Customize**: Edit athlete profile in the script  
-**Track Progress**: Run analysis weekly for trends  
+**Start Here**: `python -m src.cli --help`  
+**Sync Data**: `python -m src.cli sync`  
+**Get Insights**: `python -m src.cli analyze`  
+**Export Data**: `python -m src.cli export --format parquet`  
 
-**Your fitness data is about to reveal insights you never knew existed!** 🏃‍♂️💪
+**Your multi-source fitness data platform is ready to provide insights you never knew existed!** 🏃‍♂️💪
+
+---
+
+## **🔄 Migration from Old System**
+
+### **If You Have Existing Data**
+1. **Backup**: Copy your existing `data/` directory
+2. **Run Migration**: `python -m src.cli migrate` (when implemented)
+3. **Verify**: Check data integrity with `python -m src.cli status`
+4. **Clean Up**: Remove old CSV files after verification
+
+### **What's Changed**
+- **New Architecture**: `src/` directory structure
+- **Database**: SQLite instead of CSV files
+- **Multi-Source**: Support for multiple fitness platforms
+- **CLI Interface**: Unified command-line interface
+- **Deduplication**: Automatic handling of overlapping data

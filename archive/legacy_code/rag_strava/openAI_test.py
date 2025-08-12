@@ -1,4 +1,6 @@
 # -*- coding: utf-8 -*-
+# ARCHIVED: Legacy OpenAI test script
+# This script has been replaced by the new CLI system
 """
 Created on Wed Jul 23 15:30:25 2025
 

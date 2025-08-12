@@ -1,3 +1,5 @@
+# ARCHIVED: Legacy Strava Streamlit OpenAI integration
+# This has been replaced by the new src/visualization/streamlit_app.py
 import os
 import json
 import pandas as pd
