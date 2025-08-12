@@ -9,43 +9,44 @@ from pydantic import BaseModel, Field, validator
 from enum import Enum
 
 class Workout(BaseModel):
-    """Unified workout model for multi-source fitness data"""
-    
-    workout_id: str = Field(..., description="Deterministic hash for deduplication")
-    start_time: datetime = Field(..., description="Workout start time in UTC")
-    end_time: datetime = Field(..., description="Workout end time in UTC")
+    """Workout data model - now supports multi-athlete"""
+    workout_id: str = Field(..., description="Unique workout identifier")
+    athlete_id: str = Field(..., description="Unique athlete identifier")
+    start_time: datetime = Field(..., description="Workout start time")
+    end_time: Optional[datetime] = Field(None, description="Workout end time")
     duration: int = Field(..., description="Duration in seconds")
-    sport: str = Field(..., description="Raw sport name from source")
-    sport_category: str = Field(..., description="Categorized sport type")
+    sport: str = Field(..., description="Sport/activity type")
+    sport_category: Optional[str] = Field(None, description="Sport category")
     distance: Optional[float] = Field(None, description="Distance in meters")
     calories: Optional[int] = Field(None, description="Calories burned")
     heart_rate_avg: Optional[float] = Field(None, description="Average heart rate")
-    heart_rate_max: Optional[int] = Field(None, description="Maximum heart rate")
+    heart_rate_max: Optional[float] = Field(None, description="Maximum heart rate")
     elevation_gain: Optional[float] = Field(None, description="Elevation gain in meters")
     power_avg: Optional[float] = Field(None, description="Average power in watts")
     cadence_avg: Optional[float] = Field(None, description="Average cadence")
     training_load: Optional[float] = Field(None, description="Training load score")
-    perceived_exertion: Optional[int] = Field(None, description="RPE 1-10 scale")
+    perceived_exertion: Optional[int] = Field(None, description="Perceived exertion (1-10)")
     has_gps: bool = Field(False, description="Whether workout has GPS data")
-    route_hash: Optional[str] = Field(None, description="Hash of simplified GPS route")
-    gps_data: Optional[Dict[str, Any]] = Field(None, description="Raw GPS data for plugins")
-    data_source: str = Field(..., description="Data source")
-    external_ids: Dict[str, str] = Field(default_factory=dict, description="External IDs from sources")
-    raw_data: Optional[Dict[str, Any]] = Field(None, description="Source-specific raw data")
-    data_quality_score: float = Field(1.0, description="Data completeness score 0-1")
-    ml_features_extracted: bool = Field(False, description="Whether ML features have been extracted")
-    plugin_data: Dict[str, Any] = Field(default_factory=dict, description="Plugin analysis results")
+    route_hash: Optional[str] = Field(None, description="Route hash for deduplication")
+    gps_data: Optional[Dict[str, Any]] = Field(None, description="GPS data")
+    data_source: str = Field(..., description="Data source (strava, vesync, etc.)")
+    external_ids: Dict[str, str] = Field(default_factory=dict, description="External IDs")
+    raw_data: Optional[Dict[str, Any]] = Field(None, description="Raw data from source")
+    data_quality_score: float = Field(0.8, description="Data quality score (0-1)")
+    ml_features_extracted: bool = Field(False, description="Whether ML features extracted")
+    plugin_data: Dict[str, Any] = Field(default_factory=dict, description="Plugin-specific data")
 
 class BiometricReading(BaseModel):
-    """Unified biometric reading model"""
-    
-    date_value: date = Field(..., description="Date of the reading")
-    metric_type: str = Field(..., description="Type of biometric measurement")
-    value: float = Field(..., description="Numeric value of the measurement")
+    """Biometric reading model - now supports multi-athlete"""
+    reading_id: str = Field(..., description="Unique reading identifier")
+    athlete_id: str = Field(..., description="Unique athlete identifier")
+    timestamp: datetime = Field(..., description="Reading timestamp")
+    metric: str = Field(..., description="Metric type (weight, body_fat, etc.)")
+    value: float = Field(..., description="Metric value")
     unit: str = Field(..., description="Unit of measurement")
     data_source: str = Field(..., description="Data source")
-    confidence: float = Field(1.0, description="Confidence in the measurement 0-1")
-    external_id: Optional[str] = Field(None, description="External ID from source")
+    device_id: Optional[str] = Field(None, description="Device identifier")
+    raw_data: Optional[Dict[str, Any]] = Field(None, description="Raw data from source")
 
 class SyncStatus(BaseModel):
     """Status of data synchronization for each source"""
@@ -91,26 +92,35 @@ class BiometricSummary(BaseModel):
     daily_averages: Dict[str, Dict[str, float]] = Field(default_factory=dict, description="Daily averages by metric")
     weekly_trends: Dict[str, Dict[str, float]] = Field(default_factory=dict, description="Weekly trends by metric")
 
+class Athlete(BaseModel):
+    """Core athlete profile for multi-athlete support"""
+    athlete_id: str = Field(..., description="Unique identifier")
+    name: str = Field(..., description="Athlete name")
+    email: Optional[str] = Field(None, description="Contact email")
+    created_at: datetime = Field(default_factory=datetime.utcnow)
+    active: bool = Field(True, description="Whether athlete is active")
+
 class UserProfile(BaseModel):
-    """User profile for personalized calorie calculations"""
-    user_id: str = Field(..., description="Unique user identifier")
+    """User profile for personalized calorie calculations - now linked to athlete"""
+    athlete_id: str = Field(..., description="Links to athlete record")
     age: int = Field(..., ge=13, le=100, description="User age in years")
     gender: Literal['male', 'female'] = Field(..., description="User gender")
     weight_kg: float = Field(..., gt=30, lt=300, description="Weight in kilograms")
     height_cm: Optional[float] = Field(None, gt=100, lt=250, description="Height in centimeters")
     vo2max: Optional[float] = Field(None, gt=20, lt=80, description="VO2 max in ml/kg/min")
-    resting_hr: Optional[int] = Field(None, gt=40, lt=100, description="Resting heart rate in bpm")
-    max_hr: Optional[int] = Field(None, gt=120, lt=220, description="Maximum heart rate in bpm")
+    resting_hr: Optional[int] = Field(None, gt=40, lt=100, description="Resting heart rate")
+    max_hr: Optional[int] = Field(None, gt=150, lt=220, description="Maximum heart rate")
     activity_level: Literal['sedentary', 'light', 'moderate', 'active', 'very_active'] = Field(
-        'moderate', description="Activity level for BMR calculations"
+        'moderate', description="Activity level"
     )
-    created_at: datetime = Field(default_factory=datetime.now, description="Profile creation timestamp")
-    updated_at: datetime = Field(default_factory=datetime.now, description="Last update timestamp")
     
     @property
     def calculated_max_hr(self) -> int:
-        """Tanaka formula: 208 - (0.7 × age) - more accurate than 220-age"""
-        return self.max_hr or int(208 - (0.7 * self.age))
+        """Calculate max HR using age-based formula if not provided"""
+        if self.max_hr:
+            return self.max_hr
+        # Standard age-based formula: 220 - age
+        return 220 - self.age
     
     @property
     def bmr(self) -> float:
@@ -148,12 +158,12 @@ class UserProfile(BaseModel):
         }
 
 class CalorieCalculationResult(BaseModel):
-    """Result of enhanced calorie calculation"""
-    calories: int = Field(..., description="Calculated calories burned")
+    """Result of calorie calculation with confidence and method details"""
+    calories: int = Field(..., description="Calculated calories")
     method: str = Field(..., description="Calculation method used")
-    confidence: float = Field(..., ge=0.0, le=1.0, description="Confidence score (0-1)")
-    factors: Dict[str, Any] = Field(default_factory=dict, description="Calculation factors")
-    quality_score: float = Field(..., ge=0.0, le=1.0, description="Data quality score")
+    confidence: float = Field(..., description="Confidence level (0-1)")
+    factors: Dict[str, Any] = Field(default_factory=dict, description="Factors used in calculation")
+    quality_score: float = Field(..., description="Overall quality score")
     
     class Config:
         schema_extra = {
@@ -165,3 +175,21 @@ class CalorieCalculationResult(BaseModel):
                 "quality_score": 0.9
             }
         }
+
+class AthleteDataSource(BaseModel):
+    """Athlete's connection to a data source"""
+    athlete_id: str = Field(..., description="Athlete identifier")
+    source_name: str = Field(..., description="Data source name")
+    auth_token: Optional[str] = Field(None, description="Authentication token")
+    refresh_token: Optional[str] = Field(None, description="Refresh token")
+    expires_at: Optional[datetime] = Field(None, description="Token expiration")
+    last_sync: Optional[datetime] = Field(None, description="Last synchronization")
+    active: bool = Field(True, description="Whether connection is active")
+
+class AthleteCalorieCalibration(BaseModel):
+    """Per-athlete calorie calibration factors"""
+    athlete_id: str = Field(..., description="Athlete identifier")
+    sport_category: str = Field(..., description="Sport category")
+    calibration_factor: float = Field(1.0, description="Calibration multiplier")
+    sample_count: int = Field(0, description="Number of samples used")
+    last_updated: datetime = Field(default_factory=datetime.utcnow, description="Last update time")

@@ -64,7 +64,7 @@ class EnhancedCalorieCalculator:
         self.database_path = database_path
         # More conservative default profile to prevent overestimation
         self.default_user = UserProfile(
-            user_id="default",
+            athlete_id="default",
             age=30,
             gender="male",
             weight_kg=65.0,  # Reduced from 70kg to be more conservative

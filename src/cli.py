@@ -4,16 +4,18 @@ Command Line Interface for Athlete Performance Predictor
 Provides commands for authentication, synchronization, analysis, and export
 """
 
-import asyncio
 import click
-import logging
+import asyncio
 import os
-from datetime import date, timedelta
-from pathlib import Path
+import logging
+from datetime import datetime, timedelta
 from typing import List, Optional
 import json
+import uuid
 
 from .core.data_ingestion import DataIngestionOrchestrator
+from .core.multi_athlete_calorie_calculator import MultiAthleteCalorieCalculator
+from .core.database_schema import DatabaseSchemaManager
 from .connectors import get_connector, list_available_connectors
 from .core.models import Workout, BiometricReading
 
@@ -113,7 +115,7 @@ def authenticate(source):
                 return
         
         click.echo("✅ Credentials configured")
-        click.echo("🔗 Testing connection...")
+        click.echo("�� Testing connection...")
         
         # Test connection and register if successful
         if asyncio.run(test_connection(source)):
@@ -351,7 +353,7 @@ def run(days, plugin):
         orchestrator = DataIngestionOrchestrator()
         
         # Get data
-        end_date = date.today()
+        end_date = datetime.today()
         start_date = end_date - timedelta(days=days)
         
         workouts = orchestrator.get_workouts(start_date, end_date)
@@ -463,6 +465,7 @@ def data(format, output, days):
         
         # Show file sizes
         if output_path:
+            from pathlib import Path
             base_path = Path(output_path)
             for file_path in base_path.parent.glob(f"{base_path.name}*"):
                 if file_path.exists():
@@ -548,9 +551,9 @@ def migrate():
         
         # Check for existing CSV files
         csv_files = []
-        data_dir = Path("data")
-        if data_dir.exists():
-            csv_files = list(data_dir.glob("*.csv"))
+        data_dir = os.path.join(os.path.dirname(__file__), "data") # Adjust path to project root
+        if os.path.exists(data_dir):
+            csv_files = [f for f in os.listdir(data_dir) if f.endswith('.csv')]
         
         if not csv_files:
             click.echo("ℹ️ No CSV files found to migrate")
@@ -559,15 +562,15 @@ def migrate():
         click.echo(f"📁 Found {len(csv_files)} CSV files to migrate")
         
         for csv_file in csv_files:
-            click.echo(f"   📄 Migrating {csv_file.name}...")
+            click.echo(f"   📄 Migrating {csv_file}...")
             
             try:
                 # This would implement CSV migration logic
                 # For now, just show what would be migrated
-                click.echo(f"      ℹ️ Would migrate {csv_file.name} to database")
+                click.echo(f"      ℹ️ Would migrate {csv_file} to database")
                 
             except Exception as e:
-                click.echo(f"      ❌ Failed to migrate {csv_file.name}: {e}")
+                click.echo(f"      ❌ Failed to migrate {csv_file}: {e}")
         
         click.echo("\n✅ Migration preview completed")
         click.echo("ℹ️ Full migration will be implemented in future versions")
@@ -585,6 +588,188 @@ def version():
     click.echo("Multi-Source Fitness Data Platform")
     click.echo("Version: 2.0.0")
     click.echo("Enhanced with multi-source data ingestion")
+
+@cli.command()
+@click.argument('name')
+@click.option('--email', help='Athlete email address')
+@click.option('--age', type=int, help='Athlete age in years')
+@click.option('--gender', type=click.Choice(['male', 'female']), help='Athlete gender')
+@click.option('--weight-kg', type=float, help='Athlete weight in kilograms')
+def add_athlete(name: str, email: Optional[str] = None, 
+                age: Optional[int] = None, gender: Optional[str] = None,
+                weight_kg: Optional[float] = None):
+    """Add a new athlete to the system"""
+    try:
+        # Initialize database schema
+        db_manager = DatabaseSchemaManager('data/athlete_performance.db')
+        db_manager.initialize_schema()
+        
+        # Create athlete using calculator
+        calculator = MultiAthleteCalorieCalculator('data/athlete_performance.db')
+        athlete_id = calculator.create_athlete(name, email)
+        
+        # Update profile if additional data provided
+        if any([age, gender, weight_kg]):
+            profile_updates = {}
+            if age:
+                profile_updates['age'] = age
+            if gender:
+                profile_updates['gender'] = gender
+            if weight_kg:
+                profile_updates['weight_kg'] = weight_kg
+            
+            db_manager.update_athlete_profile(athlete_id, profile_updates)
+        
+        click.echo(f"✅ Created athlete: {name} (ID: {athlete_id})")
+        
+    except Exception as e:
+        click.echo(f"❌ Failed to create athlete: {e}")
+
+@cli.command()
+@click.argument('athlete_id')
+@click.argument('start_date')
+@click.argument('end_date')
+def calculate_calories(athlete_id: str, start_date: str, end_date: str):
+    """Calculate calories for an athlete's workouts"""
+    try:
+        calculator = MultiAthleteCalorieCalculator('data/athlete_performance.db')
+        
+        # Get workouts for athlete
+        workouts = calculator.get_athlete_workouts(athlete_id, start_date, end_date)
+        
+        if not workouts:
+            click.echo(f"❌ No workouts found for athlete {athlete_id} between {start_date} and {end_date}")
+            return
+        
+        results = []
+        total_calories = 0
+        
+        click.echo(f"🏃‍♂️ Calculating calories for {len(workouts)} workouts...")
+        click.echo("=" * 60)
+        
+        for workout in workouts:
+            result = calculator.calculate_for_athlete(workout, athlete_id)
+            results.append({
+                'date': workout.start_time.strftime('%Y-%m-%d'),
+                'sport': workout.sport,
+                'duration': f"{workout.duration // 60}m",
+                'calories': result.calories,
+                'method': result.method,
+                'confidence': result.confidence
+            })
+            total_calories += result.calories
+        
+        # Display results
+        for result in results:
+            click.echo(f"{result['date']} | {result['sport']:15} | {result['duration']:5} | "
+                      f"{result['calories']:4} cal | {result['method']:20} | {result['confidence']:.2f}")
+        
+        click.echo("=" * 60)
+        click.echo(f"📊 Total Calories: {total_calories:,} kcal")
+        click.echo(f"📈 Average Confidence: {sum(r['confidence'] for r in results) / len(results):.2f}")
+        
+    except Exception as e:
+        click.echo(f"❌ Failed to calculate calories: {e}")
+
+@cli.command()
+def list_athletes():
+    """List all athletes in the system"""
+    try:
+        import sqlite3
+        
+        with sqlite3.connect('data/athlete_performance.db') as conn:
+            cursor = conn.execute("""
+                SELECT a.athlete_id, a.name, a.email, a.created_at, a.active,
+                       p.age, p.gender, p.weight_kg, p.activity_level
+                FROM athletes a
+                LEFT JOIN athlete_profiles p ON a.athlete_id = p.athlete_id
+                ORDER BY a.created_at DESC
+            """)
+            
+            rows = cursor.fetchall()
+            
+            if not rows:
+                click.echo("❌ No athletes found in the system")
+                return
+            
+            click.echo("👥 ATHLETES IN SYSTEM")
+            click.echo("=" * 80)
+            click.echo(f"{'ID':<36} {'Name':<20} {'Age':<4} {'Gender':<6} {'Weight':<7} {'Activity':<10} {'Created':<10}")
+            click.echo("-" * 80)
+            
+            for row in rows:
+                athlete_id, name, email, created_at, active, age, gender, weight, activity = row
+                created_date = datetime.fromisoformat(created_at).strftime('%Y-%m-%d') if created_at else 'N/A'
+                age_str = str(age) if age else 'N/A'
+                gender_str = gender if gender else 'N/A'
+                weight_str = f"{weight:.1f}kg" if weight else 'N/A'
+                activity_str = activity if activity else 'N/A'
+                
+                status = "✅" if active else "❌"
+                
+                click.echo(f"{athlete_id:<36} {name:<20} {age_str:<4} {gender_str:<6} "
+                          f"{weight_str:<7} {activity_str:<10} {created_date:<10} {status}")
+            
+            click.echo(f"\n📊 Total Athletes: {len(rows)}")
+            
+    except Exception as e:
+        click.echo(f"❌ Failed to list athletes: {e}")
+
+@cli.command()
+@click.argument('athlete_id')
+@click.option('--age', type=int, help='Athlete age in years')
+@click.option('--gender', type=click.Choice(['male', 'female']), help='Athlete gender')
+@click.option('--weight-kg', type=float, help='Athlete weight in kilograms')
+@click.option('--height-cm', type=float, help='Athlete height in centimeters')
+@click.option('--vo2max', type=float, help='Athlete VO2 max in ml/kg/min')
+@click.option('--resting-hr', type=int, help='Athlete resting heart rate')
+@click.option('--max-hr', type=int, help='Athlete maximum heart rate')
+@click.option('--activity-level', type=click.Choice(['sedentary', 'light', 'moderate', 'active', 'very_active']), help='Athlete activity level')
+def update_profile(athlete_id: str, age: Optional[int] = None, gender: Optional[str] = None,
+                  weight_kg: Optional[float] = None, height_cm: Optional[float] = None,
+                  vo2max: Optional[float] = None, resting_hr: Optional[int] = None,
+                  max_hr: Optional[int] = None, activity_level: Optional[str] = None):
+    """Update an athlete's profile"""
+    try:
+        db_manager = DatabaseSchemaManager('data/athlete_performance.db')
+        
+        # Build profile updates
+        profile_updates = {}
+        if age is not None:
+            profile_updates['age'] = age
+        if gender is not None:
+            profile_updates['gender'] = gender
+        if weight_kg is not None:
+            profile_updates['weight_kg'] = weight_kg
+        if height_cm is not None:
+            profile_updates['height_cm'] = height_cm
+        if vo2max is not None:
+            profile_updates['vo2max'] = vo2max
+        if resting_hr is not None:
+            profile_updates['resting_hr'] = resting_hr
+        if max_hr is not None:
+            profile_updates['max_hr'] = max_hr
+        if activity_level is not None:
+            profile_updates['activity_level'] = activity_level
+        
+        if not profile_updates:
+            click.echo("❌ No profile updates specified")
+            return
+        
+        # Update profile
+        db_manager.update_athlete_profile(athlete_id, profile_updates)
+        click.echo(f"✅ Updated profile for athlete {athlete_id}")
+        
+        # Show updated profile
+        updated_profile = db_manager.get_athlete_profile(athlete_id)
+        if updated_profile:
+            click.echo("\n📋 Updated Profile:")
+            for key, value in updated_profile.items():
+                if key != 'athlete_id':
+                    click.echo(f"  {key}: {value}")
+        
+    except Exception as e:
+        click.echo(f"❌ Failed to update profile: {e}")
 
 if __name__ == "__main__":
     cli()

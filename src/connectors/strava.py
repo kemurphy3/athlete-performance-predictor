@@ -167,6 +167,7 @@ class StravaConnector(BaseConnector):
             # Create a temporary workout object for calculation
             temp_workout = Workout(
                 workout_id=str(activity["id"]),
+                athlete_id="default",  # Use default athlete for now
                 start_time=start_time,
                 end_time=end_time,
                 duration=activity["elapsed_time"],
@@ -179,23 +180,25 @@ class StravaConnector(BaseConnector):
                 elevation_gain=activity.get("total_elevation_gain"),
                 power_avg=activity.get("average_watts"),
                 cadence_avg=activity.get("average_cadence"),
-                training_load=activity.get("training_load"),
-                perceived_exertion=activity.get("perceived_exertion"),
-                has_gps=bool(activity.get("map")),
-                route_hash=activity.get("map", {}).get("id"),
-                gps_data=activity.get("map"),
+                training_load=None,
+                perceived_exertion=None,
+                has_gps=bool(activity.get("start_latlng")),
+                route_hash=None,
+                gps_data={"start_latlng": activity.get("start_latlng")} if activity.get("start_latlng") else {},
                 data_source="strava",
                 external_ids={"strava": str(activity["id"])},
                 raw_data=activity,
-                data_quality_score=0.8
+                data_quality_score=0.8,
+                ml_features_extracted=False,
+                plugin_data={}
             )
             
-            # Calculate enhanced calories
-            result = self.calorie_calculator.calculate_enhanced(temp_workout)
-            calculated_calories = result.calories if result.calories > 0 else None
+            # Calculate calories using enhanced calculator
+            calculated_calories = self.calorie_calculator.calculate_enhanced(temp_workout).calories
         
         return Workout(
             workout_id=str(activity["id"]),
+            athlete_id="default",  # Use default athlete for now
             start_time=start_time,
             end_time=end_time,
             duration=activity["elapsed_time"],
@@ -208,15 +211,17 @@ class StravaConnector(BaseConnector):
             elevation_gain=activity.get("total_elevation_gain"),
             power_avg=activity.get("average_watts"),
             cadence_avg=activity.get("average_cadence"),
-            training_load=activity.get("training_load"),
-            perceived_exertion=activity.get("perceived_exertion"),
-            has_gps=bool(activity.get("map")),
-            route_hash=activity.get("map", {}).get("id"),
-            gps_data=activity.get("map"),
+            training_load=None,
+            perceived_exertion=None,
+            has_gps=bool(activity.get("start_latlng")),
+            route_hash=None,
+            gps_data={"start_latlng": activity.get("start_latlng")} if activity.get("start_latlng") else {},
             data_source="strava",
             external_ids={"strava": str(activity["id"])},
             raw_data=activity,
-            data_quality_score=0.8  # Strava data is generally high quality
+            data_quality_score=0.8,
+            ml_features_extracted=False,
+            plugin_data={}
         )
     
     async def fetch_biometrics(self, start_date: date, end_date: date) -> List[BiometricReading]:

@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """
-Database Schema for Enhanced Calorie Calculation System
-Handles user profiles, calibration factors, and weather cache
+Database Schema for Enhanced Multi-Athlete Calorie Calculation System
+Handles user profiles, calibration factors, weather cache, and multi-athlete support
 """
 
 import sqlite3
@@ -12,253 +12,365 @@ from typing import Optional, Dict, Any
 logger = logging.getLogger(__name__)
 
 class DatabaseSchemaManager:
-    """Manages database schema for enhanced calorie calculation"""
+    """Manages database schema for enhanced multi-athlete calorie calculation"""
     
     def __init__(self, database_path: str):
         self.database_path = database_path
         self.logger = logger
     
     def initialize_schema(self):
-        """Initialize all required tables for enhanced calorie calculation"""
+        """Initialize all required tables for enhanced multi-athlete calorie calculation"""
         try:
             with sqlite3.connect(self.database_path) as conn:
                 cursor = conn.cursor()
                 
-                # Create user profiles table
+                # Create athletes table
                 cursor.execute("""
-                    CREATE TABLE IF NOT EXISTS user_profiles (
-                        user_id TEXT PRIMARY KEY,
+                    CREATE TABLE IF NOT EXISTS athletes (
+                        athlete_id TEXT PRIMARY KEY,
+                        name TEXT NOT NULL,
+                        email TEXT UNIQUE,
+                        active BOOLEAN DEFAULT TRUE,
+                        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+                    )
+                """)
+                
+                # Create athlete profiles table (renamed from user_profiles)
+                cursor.execute("""
+                    CREATE TABLE IF NOT EXISTS athlete_profiles (
+                        athlete_id TEXT PRIMARY KEY,
                         age INTEGER NOT NULL,
                         gender TEXT NOT NULL CHECK (gender IN ('male', 'female')),
-                        weight_kg REAL NOT NULL CHECK (weight_kg > 30 AND weight_kg < 300),
-                        height_cm REAL CHECK (height_cm > 100 AND height_cm < 250),
-                        vo2max REAL CHECK (vo2max > 20 AND vo2max < 80),
-                        resting_hr INTEGER CHECK (resting_hr > 40 AND resting_hr < 100),
-                        max_hr INTEGER CHECK (max_hr > 120 AND max_hr < 220),
+                        weight_kg REAL NOT NULL,
+                        height_cm REAL,
+                        vo2max REAL,
+                        resting_hr INTEGER,
+                        max_hr INTEGER,
                         activity_level TEXT DEFAULT 'moderate' 
                             CHECK (activity_level IN ('sedentary', 'light', 'moderate', 'active', 'very_active')),
                         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-                        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+                        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                        FOREIGN KEY (athlete_id) REFERENCES athletes(athlete_id)
                     )
                 """)
                 
-                # Create calorie calibration table
+                # Create multi-athlete data sources table
                 cursor.execute("""
-                    CREATE TABLE IF NOT EXISTS calorie_calibration (
-                        user_id TEXT NOT NULL,
+                    CREATE TABLE IF NOT EXISTS athlete_data_sources (
+                        athlete_id TEXT NOT NULL,
+                        source_name TEXT NOT NULL,
+                        auth_token TEXT,
+                        refresh_token TEXT,
+                        expires_at TIMESTAMP,
+                        last_sync TIMESTAMP,
+                        active BOOLEAN DEFAULT TRUE,
+                        PRIMARY KEY (athlete_id, source_name),
+                        FOREIGN KEY (athlete_id) REFERENCES athletes(athlete_id)
+                    )
+                """)
+                
+                # Create per-athlete calorie calibration table
+                cursor.execute("""
+                    CREATE TABLE IF NOT EXISTS athlete_calorie_calibration (
+                        athlete_id TEXT NOT NULL,
                         sport_category TEXT NOT NULL,
-                        calibration_factor REAL DEFAULT 1.0 CHECK (calibration_factor > 0.5 AND calibration_factor < 2.0),
+                        calibration_factor REAL DEFAULT 1.0,
                         sample_count INTEGER DEFAULT 0,
                         last_updated TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-                        PRIMARY KEY (user_id, sport_category),
-                        FOREIGN KEY (user_id) REFERENCES user_profiles (user_id)
+                        PRIMARY KEY (athlete_id, sport_category),
+                        FOREIGN KEY (athlete_id) REFERENCES athletes(athlete_id)
                     )
                 """)
                 
-                # Create weather cache table
+                # Handle existing weather_cache table - add expires_at column if missing
+                cursor.execute("PRAGMA table_info(weather_cache)")
+                weather_columns = [col[1] for col in cursor.fetchall()]
+                
+                if 'weather_cache' in weather_columns and 'expires_at' not in weather_columns:
+                    try:
+                        cursor.execute("ALTER TABLE weather_cache ADD COLUMN expires_at TIMESTAMP")
+                        self.logger.info("Added expires_at column to existing weather_cache table")
+                    except sqlite3.OperationalError:
+                        # Column might already exist
+                        pass
+                
+                # Create weather cache table if it doesn't exist
                 cursor.execute("""
                     CREATE TABLE IF NOT EXISTS weather_cache (
                         location_hash TEXT PRIMARY KEY,
-                        timestamp_bucket INTEGER NOT NULL,
                         temperature_c REAL,
-                        humidity_percent REAL CHECK (humidity_percent >= 0 AND humidity_percent <= 100),
-                        wind_speed_mps REAL CHECK (wind_speed_mps >= 0),
-                        pressure_hpa REAL CHECK (pressure_hpa > 800 AND pressure_hpa < 1200),
-                        cached_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+                        humidity_percent REAL,
+                        wind_speed_mps REAL,
+                        pressure_hpa REAL,
+                        cached_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                        expires_at TIMESTAMP
                     )
                 """)
                 
-                # Create calorie calculation history table
+                # Create elevation cache table
                 cursor.execute("""
-                    CREATE TABLE IF NOT EXISTS calorie_calculation_history (
-                        id INTEGER PRIMARY KEY AUTOINCREMENT,
-                        workout_id TEXT NOT NULL,
-                        user_id TEXT NOT NULL,
-                        original_calories INTEGER,
-                        calculated_calories INTEGER NOT NULL,
-                        calculation_method TEXT NOT NULL,
-                        confidence_score REAL CHECK (confidence_score >= 0 AND confidence_score <= 1),
-                        factors TEXT,  -- JSON string of calculation factors
-                        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-                        FOREIGN KEY (workout_id) REFERENCES workouts (workout_id),
-                        FOREIGN KEY (user_id) REFERENCES user_profiles (user_id)
+                    CREATE TABLE IF NOT EXISTS elevation_cache (
+                        coordinates_hash TEXT PRIMARY KEY,
+                        elevation_m REAL,
+                        cached_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                        expires_at TIMESTAMP
                     )
                 """)
                 
                 # Create indexes for performance
-                cursor.execute("CREATE INDEX IF NOT EXISTS idx_user_profiles_gender ON user_profiles(gender)")
-                cursor.execute("CREATE INDEX IF NOT EXISTS idx_calibration_user_sport ON calorie_calibration(user_id, sport_category)")
-                cursor.execute("CREATE INDEX IF NOT EXISTS idx_weather_location_time ON weather_cache(location_hash, timestamp_bucket)")
-                cursor.execute("CREATE INDEX IF NOT EXISTS idx_calorie_history_workout ON calorie_calculation_history(workout_id)")
-                cursor.execute("CREATE INDEX IF NOT EXISTS idx_calorie_history_user ON calorie_calculation_history(user_id)")
+                cursor.execute("""
+                    CREATE INDEX IF NOT EXISTS idx_athlete_profiles_activity 
+                    ON athlete_profiles(activity_level, age, gender)
+                """)
+                
+                cursor.execute("""
+                    CREATE INDEX IF NOT EXISTS idx_athlete_data_sources_active 
+                    ON athlete_data_sources(athlete_id, active)
+                """)
+                
+                cursor.execute("""
+                    CREATE INDEX IF NOT EXISTS idx_calibration_sport 
+                    ON athlete_calorie_calibration(sport_category, calibration_factor)
+                """)
+                
+                # Only create weather index if expires_at column exists
+                cursor.execute("PRAGMA table_info(weather_cache)")
+                weather_columns = [col[1] for col in cursor.fetchall()]
+                if 'expires_at' in weather_columns:
+                    cursor.execute("""
+                        CREATE INDEX IF NOT EXISTS idx_weather_cache_expires 
+                        ON weather_cache(expires_at)
+                    """)
                 
                 conn.commit()
-                self.logger.info("Enhanced calorie calculation schema initialized successfully")
+                self.logger.info("Multi-athlete database schema initialized successfully")
                 
         except Exception as e:
-            self.logger.error(f"Error initializing schema: {e}")
+            self.logger.error(f"Failed to initialize database schema: {e}")
             raise
     
-    def create_default_user_profile(self, user_id: str = "default") -> bool:
-        """Create a default user profile for testing"""
+    def migrate_to_multi_athlete(self):
+        """Migrate existing single-user database to multi-athlete support"""
+        try:
+            with sqlite3.connect(self.database_path) as conn:
+                cursor = conn.cursor()
+                
+                # Check if migration is needed
+                cursor.execute("PRAGMA table_info(workouts)")
+                columns = [col[1] for col in cursor.fetchall()]
+                
+                if 'athlete_id' not in columns:
+                    self.logger.info("Starting migration to multi-athlete support...")
+                    
+                    # Add athlete_id column to workouts table
+                    cursor.execute("ALTER TABLE workouts ADD COLUMN athlete_id TEXT DEFAULT 'default'")
+                    
+                    # Add athlete_id column to biometrics table (note: table name is 'biometrics', not 'biometric_readings')
+                    cursor.execute("ALTER TABLE biometrics ADD COLUMN athlete_id TEXT DEFAULT 'default'")
+                    
+                    # Create default athlete
+                    cursor.execute("""
+                        INSERT OR IGNORE INTO athletes (athlete_id, name, active)
+                        VALUES ('default', 'Default Athlete', TRUE)
+                    """)
+                    
+                    # Create default athlete profile
+                    cursor.execute("""
+                        INSERT OR IGNORE INTO athlete_profiles 
+                        (athlete_id, age, gender, weight_kg, activity_level)
+                        VALUES ('default', 35, 'male', 70.0, 'moderate')
+                    """)
+                    
+                    # Create indexes for multi-athlete support
+                    cursor.execute("""
+                        CREATE INDEX IF NOT EXISTS idx_workouts_athlete 
+                        ON workouts(athlete_id, start_time DESC)
+                    """)
+                    
+                    cursor.execute("""
+                        CREATE INDEX IF NOT EXISTS idx_biometrics_athlete 
+                        ON biometrics(athlete_id, timestamp DESC)
+                    """)
+                    
+                    conn.commit()
+                    self.logger.info("Successfully migrated to multi-athlete support")
+                else:
+                    self.logger.info("Database already supports multi-athlete")
+                    
+        except Exception as e:
+            self.logger.error(f"Failed to migrate to multi-athlete: {e}")
+            raise
+    
+    def create_default_user_profile(self, athlete_id: str = 'default'):
+        """Create a default user profile for the specified athlete"""
         try:
             with sqlite3.connect(self.database_path) as conn:
                 cursor = conn.cursor()
                 
                 # Check if profile already exists
-                cursor.execute("SELECT COUNT(*) FROM user_profiles WHERE user_id = ?", (user_id,))
+                cursor.execute("SELECT COUNT(*) FROM athlete_profiles WHERE athlete_id = ?", (athlete_id,))
                 if cursor.fetchone()[0] > 0:
-                    self.logger.info(f"User profile {user_id} already exists")
-                    return True
+                    self.logger.info(f"Profile already exists for athlete {athlete_id}")
+                    return
                 
                 # Create default profile
                 cursor.execute("""
-                    INSERT INTO user_profiles (
-                        user_id, age, gender, weight_kg, height_cm, 
-                        activity_level, created_at, updated_at
-                    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?)
-                """, (
-                    user_id, 30, 'male', 70.0, 175.0, 
-                    'moderate', datetime.now(), datetime.now()
-                ))
+                    INSERT INTO athlete_profiles 
+                    (athlete_id, age, gender, weight_kg, height_cm, activity_level)
+                    VALUES (?, 35, 'male', 70.0, 175.0, 'moderate')
+                """, (athlete_id,))
                 
                 conn.commit()
-                self.logger.info(f"Default user profile created for {user_id}")
-                return True
+                self.logger.info(f"Created default profile for athlete {athlete_id}")
                 
         except Exception as e:
-            self.logger.error(f"Error creating default user profile: {e}")
-            return False
+            self.logger.error(f"Failed to create default profile: {e}")
+            raise
     
-    def get_user_profile(self, user_id: str) -> Optional[Dict[str, Any]]:
-        """Get user profile by ID"""
+    def get_athlete_profile(self, athlete_id: str) -> Optional[Dict[str, Any]]:
+        """Get athlete profile from database"""
         try:
             with sqlite3.connect(self.database_path) as conn:
-                cursor = conn.cursor()
-                cursor.execute("""
-                    SELECT user_id, age, gender, weight_kg, height_cm, vo2max, 
-                           resting_hr, max_hr, activity_level, created_at, updated_at
-                    FROM user_profiles WHERE user_id = ?
-                """, (user_id,))
+                cursor = conn.execute("""
+                    SELECT age, gender, weight_kg, height_cm, vo2max, resting_hr, max_hr, activity_level
+                    FROM athlete_profiles 
+                    WHERE athlete_id = ?
+                """, (athlete_id,))
                 
                 row = cursor.fetchone()
                 if row:
                     return {
-                        'user_id': row[0],
-                        'age': row[1],
-                        'gender': row[2],
-                        'weight_kg': row[3],
-                        'height_cm': row[4],
-                        'vo2max': row[5],
-                        'resting_hr': row[6],
-                        'max_hr': row[7],
-                        'activity_level': row[8],
-                        'created_at': row[9],
-                        'updated_at': row[10]
+                        'athlete_id': athlete_id,
+                        'age': row[0],
+                        'gender': row[1],
+                        'weight_kg': row[2],
+                        'height_cm': row[3],
+                        'vo2max': row[4],
+                        'resting_hr': row[5],
+                        'max_hr': row[6],
+                        'activity_level': row[7]
                     }
-                return None
-                
         except Exception as e:
-            self.logger.error(f"Error getting user profile: {e}")
-            return None
+            self.logger.warning(f"Could not get athlete profile: {e}")
+        
+        return None
     
-    def update_user_profile(self, user_id: str, profile_data: Dict[str, Any]) -> bool:
-        """Update user profile"""
+    def update_athlete_profile(self, athlete_id: str, profile_data: Dict[str, Any]):
+        """Update athlete profile in database"""
         try:
             with sqlite3.connect(self.database_path) as conn:
-                cursor = conn.cursor()
-                
-                # Build update query dynamically
+                # Build dynamic UPDATE query
                 fields = []
                 values = []
-                for key, value in profile_data.items():
-                    if key in ['age', 'gender', 'weight_kg', 'height_cm', 'vo2max', 'resting_hr', 'max_hr', 'activity_level']:
-                        fields.append(f"{key} = ?")
+                
+                for field, value in profile_data.items():
+                    if field != 'athlete_id' and value is not None:
+                        fields.append(f"{field} = ?")
                         values.append(value)
                 
-                if not fields:
-                    self.logger.warning("No valid fields to update")
-                    return False
-                
-                fields.append("updated_at = ?")
-                values.append(datetime.now())
-                values.append(user_id)
-                
-                query = f"UPDATE user_profiles SET {', '.join(fields)} WHERE user_id = ?"
-                cursor.execute(query, values)
-                
-                if cursor.rowcount > 0:
+                if fields:
+                    values.append(athlete_id)  # For WHERE clause
+                    query = f"""
+                        UPDATE athlete_profiles 
+                        SET {', '.join(fields)}, updated_at = CURRENT_TIMESTAMP
+                        WHERE athlete_id = ?
+                    """
+                    
+                    conn.execute(query, values)
                     conn.commit()
-                    self.logger.info(f"User profile {user_id} updated successfully")
-                    return True
-                else:
-                    self.logger.warning(f"No rows updated for user {user_id}")
-                    return False
-                
+                    self.logger.info(f"Updated profile for athlete {athlete_id}")
+                    
         except Exception as e:
-            self.logger.error(f"Error updating user profile: {e}")
-            return False
+            self.logger.error(f"Failed to update athlete profile: {e}")
+            raise
     
-    def get_calibration_factor(self, user_id: str, sport_category: str) -> float:
-        """Get calibration factor for a user and sport category"""
+    def get_calibration_factor(self, athlete_id: str, sport: str) -> float:
+        """Get calibration factor for athlete and sport"""
         try:
             with sqlite3.connect(self.database_path) as conn:
-                cursor = conn.cursor()
-                cursor.execute("""
-                    SELECT calibration_factor FROM calorie_calibration 
-                    WHERE user_id = ? AND sport_category = ?
-                """, (user_id, sport_category))
+                cursor = conn.execute("""
+                    SELECT calibration_factor FROM athlete_calorie_calibration
+                    WHERE athlete_id = ? AND sport_category = ?
+                """, (athlete_id, sport))
                 
                 row = cursor.fetchone()
-                return row[0] if row else 1.0
-                
+                if row:
+                    return row[0]
+                    
         except Exception as e:
-            self.logger.error(f"Error getting calibration factor: {e}")
-            return 1.0
+            self.logger.warning(f"Could not get calibration factor: {e}")
+        
+        return 1.0  # Default no calibration
     
-    def update_calibration_factor(self, user_id: str, sport_category: str, 
-                                new_factor: float, sample_count: int = 1) -> bool:
-        """Update calibration factor for a user and sport category"""
+    def update_calibration_factor(self, athlete_id: str, sport: str, factor: float, sample_count: int = 1):
+        """Update calibration factor for athlete and sport"""
         try:
             with sqlite3.connect(self.database_path) as conn:
-                cursor = conn.cursor()
-                
-                cursor.execute("""
-                    INSERT OR REPLACE INTO calorie_calibration 
-                    (user_id, sport_category, calibration_factor, sample_count, last_updated)
-                    VALUES (?, ?, ?, ?, ?)
-                """, (user_id, sport_category, new_factor, sample_count, datetime.now()))
+                conn.execute("""
+                    INSERT INTO athlete_calorie_calibration 
+                    (athlete_id, sport_category, calibration_factor, sample_count, last_updated)
+                    VALUES (?, ?, ?, ?, CURRENT_TIMESTAMP)
+                    ON CONFLICT(athlete_id, sport_category) DO UPDATE SET
+                        calibration_factor = ?,
+                        sample_count = ?,
+                        last_updated = CURRENT_TIMESTAMP
+                """, (athlete_id, sport, factor, sample_count, factor, sample_count))
                 
                 conn.commit()
-                self.logger.info(f"Calibration factor updated for {user_id} - {sport_category}: {new_factor}")
-                return True
+                self.logger.info(f"Updated calibration for {athlete_id}:{sport} = {factor}")
                 
         except Exception as e:
-            self.logger.error(f"Error updating calibration factor: {e}")
-            return False
+            self.logger.error(f"Failed to update calibration factor: {e}")
+            raise
     
-    def log_calorie_calculation(self, workout_id: str, user_id: str, 
-                               original_calories: Optional[int], calculated_calories: int,
-                               method: str, confidence: float, factors: Dict[str, Any]) -> bool:
-        """Log a calorie calculation for analysis and calibration"""
+    def get_weather_data(self, location_hash: str) -> Optional[Dict[str, Any]]:
+        """Get cached weather data for location"""
         try:
-            import json
-            
             with sqlite3.connect(self.database_path) as conn:
-                cursor = conn.cursor()
-                cursor.execute("""
-                    INSERT INTO calorie_calculation_history 
-                    (workout_id, user_id, original_calories, calculated_calories, 
-                     calculation_method, confidence_score, factors)
-                    VALUES (?, ?, ?, ?, ?, ?, ?)
+                cursor = conn.execute("""
+                    SELECT temperature_c, humidity_percent, wind_speed_mps, pressure_hpa, cached_at, expires_at
+                    FROM weather_cache
+                    WHERE location_hash = ? AND expires_at > CURRENT_TIMESTAMP
+                """, (location_hash,))
+                
+                row = cursor.fetchone()
+                if row:
+                    return {
+                        'temperature_c': row[0],
+                        'humidity_percent': row[1],
+                        'wind_speed_mps': row[2],
+                        'pressure_hpa': row[3],
+                        'cached_at': row[4],
+                        'expires_at': row[5]
+                    }
+                    
+        except Exception as e:
+            self.logger.warning(f"Could not get weather data: {e}")
+        
+        return None
+    
+    def cache_weather_data(self, location_hash: str, weather_data: Dict[str, Any], ttl_minutes: int = 15):
+        """Cache weather data with TTL"""
+        try:
+            with sqlite3.connect(self.database_path) as conn:
+                expires_at = datetime.now().timestamp() + (ttl_minutes * 60)
+                
+                conn.execute("""
+                    INSERT OR REPLACE INTO weather_cache 
+                    (location_hash, temperature_c, humidity_percent, wind_speed_mps, pressure_hpa, expires_at)
+                    VALUES (?, ?, ?, ?, ?, ?)
                 """, (
-                    workout_id, user_id, original_calories, calculated_calories,
-                    method, confidence, json.dumps(factors)
+                    location_hash,
+                    weather_data.get('temperature_c'),
+                    weather_data.get('humidity_percent'),
+                    weather_data.get('wind_speed_mps'),
+                    weather_data.get('pressure_hpa'),
+                    expires_at
                 ))
                 
                 conn.commit()
-                return True
+                self.logger.info(f"Cached weather data for {location_hash}")
                 
         except Exception as e:
-            self.logger.error(f"Error logging calorie calculation: {e}")
-            return False
+            self.logger.error(f"Failed to cache weather data: {e}")
+            raise
