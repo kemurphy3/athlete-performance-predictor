@@ -1,59 +1,23 @@
-# Copy this file to .env and fill in your actual values
-# Database Configuration
-DATABASE_URL=sqlite:///data/athlete_performance.db
-
-# Sync Settings
-DEFAULT_SYNC_DAYS=30
-ENABLE_DEDUPLICATION=true
-LOG_LEVEL=INFO
-
 # Strava API Configuration
-STRAVA_CLIENT_ID=
-STRAVA_CLIENT_SECRET=
-STRAVA_REFRESH_TOKEN=
+STRAVA_CLIENT_ID=your_strava_client_id_here
+STRAVA_CLIENT_SECRET=your_strava_client_secret_here
+STRAVA_REFRESH_TOKEN=your_strava_refresh_token_here
 
-# Garmin Connect Configuration
-GARMIN_USERNAME=
-GARMIN_PASSWORD=
+# VeSync Configuration
+VESYNC_USERNAME=your_vesync_username_here
+VESYNC_PASSWORD=your_vesync_password_here
+VESYNC_TIMEZONE=America/Denver
 
-# Fitbit API Configuration
-FITBIT_CLIENT_ID=
-FITBIT_CLIENT_SECRET=
-FITBIT_ACCESS_TOKEN=
-FITBIT_REFRESH_TOKEN=
+# Enhanced Calorie Calculation Configuration
+OPENWEATHER_API_KEY=your_openweather_api_key_here
+ELEVATION_API_KEY=your_google_or_mapbox_key_here
+CALORIE_CALCULATION_MODE=enhanced
+ENABLE_WEATHER_LOOKUP=true
+WEATHER_CACHE_TTL_MINUTES=15
 
-# WHOOP API Configuration
-WHOOP_API_KEY=
-WHOOP_USER_ID=
+# Database Configuration
+DATABASE_PATH=data/athlete_performance.db
 
-# Oura API Configuration
-OURA_ACCESS_TOKEN=
-
-# Withings API Configuration
-WITHINGS_CLIENT_ID=
-WITHINGS_CLIENT_SECRET=
-WITHINGS_ACCESS_TOKEN=
-WITHINGS_REFRESH_TOKEN=
-
-# VeSync Configuration (for existing integration)
-VESYNC_USERNAME=
-VESYNC_PASSWORD=
-VESYNC_TIMEZONE=America/New_York
-
-# Security Configuration
-ENCRYPTION_KEY=
-JWT_SECRET_KEY=
-
-# AI/ML Configuration
-ENABLE_AI_INSIGHTS=true
-AI_MODEL_PATH=models/
-OPENAI_API_KEY=  # Optional: for enhanced AI insights
-
-# Export Configuration
-DEFAULT_EXPORT_FORMAT=parquet
-EXPORT_DIRECTORY=exports/
-
-# Performance Configuration
-MAX_CONCURRENT_REQUESTS=5
-REQUEST_TIMEOUT=30
-RETRY_ATTEMPTS=3
+# Logging Configuration
+LOG_LEVEL=INFO
+LOG_FILE=data/app.log

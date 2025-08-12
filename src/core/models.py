@@ -5,7 +5,8 @@ Minimal Data Models for Multi-Source Fitness Data Platform
 
 from datetime import datetime, date
 from typing import Dict, List, Optional, Any, Literal
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, validator
+from enum import Enum
 
 class Workout(BaseModel):
     """Unified workout model for multi-source fitness data"""
@@ -89,3 +90,78 @@ class BiometricSummary(BaseModel):
     sources_by_type: Dict[str, Dict[str, int]] = Field(default_factory=dict, description="Sources by metric type")
     daily_averages: Dict[str, Dict[str, float]] = Field(default_factory=dict, description="Daily averages by metric")
     weekly_trends: Dict[str, Dict[str, float]] = Field(default_factory=dict, description="Weekly trends by metric")
+
+class UserProfile(BaseModel):
+    """User profile for personalized calorie calculations"""
+    user_id: str = Field(..., description="Unique user identifier")
+    age: int = Field(..., ge=13, le=100, description="User age in years")
+    gender: Literal['male', 'female'] = Field(..., description="User gender")
+    weight_kg: float = Field(..., gt=30, lt=300, description="Weight in kilograms")
+    height_cm: Optional[float] = Field(None, gt=100, lt=250, description="Height in centimeters")
+    vo2max: Optional[float] = Field(None, gt=20, lt=80, description="VO2 max in ml/kg/min")
+    resting_hr: Optional[int] = Field(None, gt=40, lt=100, description="Resting heart rate in bpm")
+    max_hr: Optional[int] = Field(None, gt=120, lt=220, description="Maximum heart rate in bpm")
+    activity_level: Literal['sedentary', 'light', 'moderate', 'active', 'very_active'] = Field(
+        'moderate', description="Activity level for BMR calculations"
+    )
+    created_at: datetime = Field(default_factory=datetime.now, description="Profile creation timestamp")
+    updated_at: datetime = Field(default_factory=datetime.now, description="Last update timestamp")
+    
+    @property
+    def calculated_max_hr(self) -> int:
+        """Tanaka formula: 208 - (0.7 × age) - more accurate than 220-age"""
+        return self.max_hr or int(208 - (0.7 * self.age))
+    
+    @property
+    def bmr(self) -> float:
+        """Basal Metabolic Rate using Mifflin-St Jeor equation"""
+        if self.gender == 'male':
+            return (10 * self.weight_kg) + (6.25 * (self.height_cm or 175)) - (5 * self.age) + 5
+        else:
+            return (10 * self.weight_kg) + (6.25 * (self.height_cm or 162)) - (5 * self.age) - 161
+    
+    @property
+    def tdee(self) -> float:
+        """Total Daily Energy Expenditure"""
+        activity_multipliers = {
+            'sedentary': 1.2,
+            'light': 1.375,
+            'moderate': 1.55,
+            'active': 1.725,
+            'very_active': 1.9
+        }
+        return self.bmr * activity_multipliers.get(self.activity_level, 1.55)
+    
+    class Config:
+        schema_extra = {
+            "example": {
+                "user_id": "user_001",
+                "age": 30,
+                "gender": "male",
+                "weight_kg": 75.0,
+                "height_cm": 180.0,
+                "vo2max": 45.0,
+                "resting_hr": 58,
+                "max_hr": 190,
+                "activity_level": "active"
+            }
+        }
+
+class CalorieCalculationResult(BaseModel):
+    """Result of enhanced calorie calculation"""
+    calories: int = Field(..., description="Calculated calories burned")
+    method: str = Field(..., description="Calculation method used")
+    confidence: float = Field(..., ge=0.0, le=1.0, description="Confidence score (0-1)")
+    factors: Dict[str, Any] = Field(default_factory=dict, description="Calculation factors")
+    quality_score: float = Field(..., ge=0.0, le=1.0, description="Data quality score")
+    
+    class Config:
+        schema_extra = {
+            "example": {
+                "calories": 450,
+                "method": "heart_rate_keytel",
+                "confidence": 0.85,
+                "factors": {"hr_avg": 150, "duration_min": 45, "weight_kg": 75},
+                "quality_score": 0.9
+            }
+        }

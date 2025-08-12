@@ -12,7 +12,7 @@ import requests
 
 from .base import BaseConnector, ConnectorError, AuthenticationError, RateLimitError, APIError
 from ..core.models import Workout, BiometricReading
-from ..core.calorie_calculator import CalorieCalculator
+from ..core.calorie_calculator import EnhancedCalorieCalculator
 
 logger = logging.getLogger(__name__)
 
@@ -28,7 +28,7 @@ class StravaConnector(BaseConnector):
         self.client_secret = config.get("client_secret")
         
         # Initialize calorie calculator
-        self.calorie_calculator = CalorieCalculator()
+        self.calorie_calculator = EnhancedCalorieCalculator()
         
     async def authenticate(self) -> bool:
         """Authenticate with Strava using stored tokens"""
@@ -163,8 +163,36 @@ class StravaConnector(BaseConnector):
         if raw_calories and raw_calories > 0:
             calculated_calories = raw_calories
         else:
-            # Use calorie calculator to estimate calories
-            calculated_calories = self.calorie_calculator.calculate_calories(activity)
+            # Use enhanced calorie calculator to estimate calories
+            # Create a temporary workout object for calculation
+            temp_workout = Workout(
+                workout_id=str(activity["id"]),
+                start_time=start_time,
+                end_time=end_time,
+                duration=activity["elapsed_time"],
+                sport=activity.get("type", "Unknown"),
+                sport_category=sport_category,
+                distance=activity.get("distance"),
+                calories=raw_calories,
+                heart_rate_avg=activity.get("average_heartrate"),
+                heart_rate_max=activity.get("max_heartrate"),
+                elevation_gain=activity.get("total_elevation_gain"),
+                power_avg=activity.get("average_watts"),
+                cadence_avg=activity.get("average_cadence"),
+                training_load=activity.get("training_load"),
+                perceived_exertion=activity.get("perceived_exertion"),
+                has_gps=bool(activity.get("map")),
+                route_hash=activity.get("map", {}).get("id"),
+                gps_data=activity.get("map"),
+                data_source="strava",
+                external_ids={"strava": str(activity["id"])},
+                raw_data=activity,
+                data_quality_score=0.8
+            )
+            
+            # Calculate enhanced calories
+            result = self.calorie_calculator.calculate_enhanced(temp_workout)
+            calculated_calories = result.calories if result.calories > 0 else None
         
         return Workout(
             workout_id=str(activity["id"]),
