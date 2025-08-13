@@ -6,6 +6,7 @@ A comprehensive fitness analytics platform that combines data from Strava activi
 
 ### Data Collection
 - **Strava Integration**: Automatic collection of workout data, heart rate, GPS, and performance metrics
+- **Garmin Connect Integration**: Workout data, biometrics, and device information from Garmin fitness devices
 - **VeSync Integration**: Smart scale data (weight, body composition), sleep tracking, and environmental monitoring
 - **Real-time Updates**: Automated data collection with configurable refresh intervals
 
@@ -65,6 +66,7 @@ A comprehensive fitness analytics platform that combines data from Strava activi
 - Python 3.8+
 - VeSync account with smart devices
 - Strava API access (already configured in your workspace)
+- Garmin Connect API access (optional, for additional fitness data)
 
 ### 1. Install Dependencies
 ```bash
@@ -84,6 +86,11 @@ VESYNC_TIMEZONE=America/Denver
 STRAVA_CLIENT_ID=your_strava_client_id
 STRAVA_CLIENT_SECRET=your_strava_client_secret
 STRAVA_REFRESH_TOKEN=your_strava_refresh_token
+
+# Garmin Connect API Credentials (optional)
+GARMIN_CLIENT_ID=your_garmin_client_id
+GARMIN_CLIENT_SECRET=your_garmin_client_secret
+GARMIN_REDIRECT_URI=http://localhost:8000/auth/garmin/callback
 ```
 
 ### 3. Verify Device Compatibility
@@ -299,12 +306,24 @@ This project is licensed under the MIT License - see the LICENSE file for detail
 - The open-source community for data analysis libraries
 - Sports science researchers whose work informed this project
 
+## 🔒 Privacy & Security
+
+We take your privacy seriously. Our platform collects sensitive fitness and health data, and we're committed to protecting it:
+
+- **Comprehensive Privacy Policy**: [PRIVACY_POLICY.md](PRIVACY_POLICY.md)
+- **User-Friendly Summary**: [docs/user/PRIVACY_SUMMARY.md](docs/user/PRIVACY_SUMMARY.md)
+- **GDPR & CCPA Compliant**: Full compliance with privacy regulations
+- **Data Encryption**: All data encrypted in transit and at rest
+- **User Control**: Full control over your data and privacy settings
+
 ## 📞 Support
 
 For issues and questions:
 1. Check the troubleshooting section
 2. Review existing GitHub issues
 3. Create a new issue with detailed information
+
+**Privacy Questions**: privacy@athleteperformancepredictor.com
 
 ---
 

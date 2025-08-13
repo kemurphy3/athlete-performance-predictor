@@ -3,6 +3,13 @@ STRAVA_CLIENT_ID=your_strava_client_id_here
 STRAVA_CLIENT_SECRET=your_strava_client_secret_here
 STRAVA_REFRESH_TOKEN=your_strava_refresh_token_here
 
+# Garmin Connect API Configuration
+GARMIN_CLIENT_ID=your_garmin_client_id_here
+GARMIN_CLIENT_SECRET=your_garmin_client_secret_here
+GARMIN_REDIRECT_URI=http://localhost:8000/auth/garmin/callback
+GARMIN_ACCESS_TOKEN=your_garmin_access_token_here
+GARMIN_REFRESH_TOKEN=your_garmin_refresh_token_here
+
 # VeSync Configuration
 VESYNC_USERNAME=your_vesync_username_here
 VESYNC_PASSWORD=your_vesync_password_here
