@@ -19,10 +19,16 @@ import json
 
 # Import project modules
 try:
-    from ..core.multi_athlete_calorie_calculator import MultiAthleteCalorieCalculator
-    from ..core.data_ingestion import DataIngestionOrchestrator
-    from ..connectors import get_connector, list_available_connectors
-    from ..core.models import Workout, BiometricReading, UserProfile
+    import sys
+    import os
+    # Add the project root to Python path
+    project_root = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+    sys.path.insert(0, project_root)
+    
+    from src.core.multi_athlete_calorie_calculator import MultiAthleteCalorieCalculator
+    from src.core.data_ingestion import DataIngestionOrchestrator
+    from src.connectors import get_connector, list_available_connectors
+    from src.core.models import Workout, BiometricReading, UserProfile
 except ImportError as e:
     st.error(f"Import error: {e}")
     st.info("Make sure you're running from the project root directory")
@@ -206,7 +212,7 @@ class AIFitnessCoach:
 class FitnessDashboard:
     """Main dashboard application"""
     
-    def __init__(self, database_path: str = "data/fitness_data.db"):
+    def __init__(self, database_path: str = "data/athlete_performance.db"):
         self.db_path = database_path
         self.calculator = MultiAthleteCalorieCalculator(database_path)
         self.orchestrator = DataIngestionOrchestrator(database_path)
@@ -575,7 +581,9 @@ class FitnessDashboard:
             available_connectors = list_available_connectors()
             for source in available_connectors:
                 try:
-                    connector = get_connector(source)
+                    # Create empty config for now - in production this would load from env
+                    config = {}
+                    connector = get_connector(source, config)
                     # Note: This would need to be async in production
                     logger.info(f"Synced {source}")
                 except Exception as e:

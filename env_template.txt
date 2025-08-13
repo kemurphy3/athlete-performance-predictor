@@ -10,10 +10,10 @@ GARMIN_REDIRECT_URI=http://localhost:8000/auth/garmin/callback
 GARMIN_ACCESS_TOKEN=your_garmin_access_token_here
 GARMIN_REFRESH_TOKEN=your_garmin_refresh_token_here
 
-# VeSync Configuration
-VESYNC_USERNAME=your_vesync_username_here
-VESYNC_PASSWORD=your_vesync_password_here
-VESYNC_TIMEZONE=America/Denver
+# VeSync Configuration (REMOVED - using Strava for weight data instead)
+# VESYNC_USERNAME=your_vesync_username_here
+# VESYNC_PASSWORD=your_vesync_password_here
+# VESYNC_TIMEZONE=America/Denver
 
 # Enhanced Calorie Calculation Configuration
 OPENWEATHER_API_KEY=your_openweather_api_key_here

@@ -669,7 +669,8 @@ class DataIngestionOrchestrator:
                                 raw_data=json.loads(row[8]) if row[8] else None,
                                 data_quality_score=1.0,
                                 ml_features_extracted=False,
-                                plugin_data={}
+                                plugin_data={},
+                                athlete_id='default'  # Default athlete for old schema
                             )
                         else:  # New schema
                             workout = Workout(
@@ -696,7 +697,8 @@ class DataIngestionOrchestrator:
                                 raw_data=json.loads(row[20]) if row[20] else None,
                                 data_quality_score=row[21] if row[21] is not None else 1.0,
                                 ml_features_extracted=bool(row[22]) if row[22] is not None else False,
-                                plugin_data=json.loads(row[23]) if row[23] else {}
+                                plugin_data=json.loads(row[23]) if row[23] else {},
+                                athlete_id=row[25] if len(row) > 25 else 'default'  # athlete_id is at position 25
                             )
                     except Exception as e:
                         logger.warning("Failed to create workout from row", row=row, error=str(e))

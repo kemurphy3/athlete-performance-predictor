@@ -225,39 +225,196 @@ class StravaConnector(BaseConnector):
         )
     
     async def fetch_biometrics(self, start_date: date, end_date: date) -> List[BiometricReading]:
-        """Fetch biometric data from Strava (limited availability)"""
-        # Strava doesn't provide many biometrics, but we can get some basic stats
+        """Fetch comprehensive biometric data from Strava"""
         if not self.authenticated:
             if not await self.authenticate():
                 return []
         
         try:
+            biometrics = []
             headers = {"Authorization": f"Bearer {self.access_token}"}
-            response = requests.get(f"{self.base_url}/athlete/stats", headers=headers)
             
-            if response.status_code == 200:
-                stats = response.json()
-                biometrics = []
+            # 1. Get athlete profile (weight, height, etc.)
+            profile_response = requests.get(f"{self.base_url}/athlete", headers=headers)
+            if profile_response.status_code == 200:
+                profile = profile_response.json()
                 
-                # Add basic stats as biometric readings
+                # Add weight if available (this is what you were looking for!)
+                if profile.get("weight"):
+                    biometrics.append(BiometricReading(
+                        reading_id=f"strava_weight_{date.today().strftime('%Y%m%d')}",
+                        athlete_id="default",  # Use default athlete for now
+                        timestamp=datetime.now(),
+                        metric="weight",
+                        value=float(profile["weight"]),
+                        unit="kg",
+                        data_source="strava",
+                        raw_data={"profile": profile}
+                    ))
+                    self.logger.info(f"Found Strava weight: {profile['weight']} kg")
+                
+                # Add height if available
+                if profile.get("height"):
+                    biometrics.append(BiometricReading(
+                        reading_id=f"strava_height_{date.today().strftime('%Y%m%d')}",
+                        athlete_id="default",
+                        timestamp=datetime.now(),
+                        metric="height",
+                        value=float(profile["height"]),
+                        unit="cm",
+                        data_source="strava",
+                        raw_data={"profile": profile}
+                    ))
+                    self.logger.info(f"Found Strava height: {profile['height']} cm")
+                
+                # Add other profile metrics
+                if profile.get("follower_count"):
+                    biometrics.append(BiometricReading(
+                        reading_id=f"strava_followers_{date.today().strftime('%Y%m%d')}",
+                        athlete_id="default",
+                        timestamp=datetime.now(),
+                        metric="followers",
+                        value=float(profile["follower_count"]),
+                        unit="count",
+                        data_source="strava",
+                        raw_data={"profile": profile}
+                    ))
+            
+            # 2. Get athlete stats (recent totals, all-time totals)
+            stats_response = requests.get(f"{self.base_url}/athlete/stats", headers=headers)
+            if stats_response.status_code == 200:
+                stats = stats_response.json()
+                
+                # Add recent run totals
                 if "recent_run_totals" in stats:
                     recent = stats["recent_run_totals"]
                     if recent.get("count") > 0:
                         biometrics.append(BiometricReading(
-                            date_value=date.today(),
-                            metric_type="steps",
+                            reading_id=f"strava_recent_runs_{date.today().strftime('%Y%m%d')}",
+                            athlete_id="default",
+                            timestamp=datetime.now(),
+                            metric="recent_run_distance",
                             value=float(recent.get("distance", 0)),
                             unit="meters",
                             data_source="strava",
-                            confidence=0.7
+                            raw_data={"recent_runs": recent}
+                        ))
+                        
+                        # Add recent run calories
+                        if recent.get("calories"):
+                            biometrics.append(BiometricReading(
+                                reading_id=f"strava_recent_runs_calories_{date.today().strftime('%Y%m%d')}",
+                                athlete_id="default",
+                                timestamp=datetime.now(),
+                                metric="recent_run_calories",
+                                value=float(recent.get("calories", 0)),
+                                unit="calories",
+                                data_source="strava",
+                                raw_data={"recent_runs": recent}
+                            ))
+                
+                # Add recent ride totals
+                if "recent_ride_totals" in stats:
+                    recent_rides = stats["recent_ride_totals"]
+                    if recent_rides.get("count") > 0:
+                        biometrics.append(BiometricReading(
+                            reading_id=f"strava_recent_rides_{date.today().strftime('%Y%m%d')}",
+                            athlete_id="default",
+                            timestamp=datetime.now(),
+                            metric="recent_ride_distance",
+                            value=float(recent_rides.get("distance", 0)),
+                            unit="meters",
+                            data_source="strava",
+                            raw_data={"recent_rides": recent_rides}
+                        ))
+                        
+                        # Add recent ride calories
+                        if recent_rides.get("calories"):
+                            biometrics.append(BiometricReading(
+                                reading_id=f"strava_recent_rides_calories_{date.today().strftime('%Y%m%d')}",
+                                athlete_id="default",
+                                timestamp=datetime.now(),
+                                metric="recent_ride_calories",
+                                value=float(recent_rides.get("calories", 0)),
+                                unit="calories",
+                                data_source="strava",
+                                raw_data={"recent_rides": recent_rides}
+                            ))
+                
+                # Add all-time totals
+                if "all_run_totals" in stats:
+                    all_runs = stats["all_run_totals"]
+                    biometrics.append(BiometricReading(
+                        reading_id=f"strava_alltime_runs_{date.today().strftime('%Y%m%d')}",
+                        athlete_id="default",
+                        timestamp=datetime.now(),
+                        metric="alltime_run_distance",
+                        value=float(all_runs.get("distance", 0)),
+                        unit="meters",
+                        data_source="strava",
+                        raw_data={"all_time_runs": all_runs}
+                    ))
+                    
+                    if all_runs.get("calories"):
+                        biometrics.append(BiometricReading(
+                            reading_id=f"strava_alltime_runs_calories_{date.today().strftime('%Y%m%d')}",
+                            athlete_id="default",
+                            timestamp=datetime.now(),
+                            metric="alltime_run_calories",
+                            value=float(all_runs.get("calories", 0)),
+                            unit="calories",
+                            data_source="strava",
+                            raw_data={"all_time_runs": all_runs}
                         ))
                 
-                self.logger.info(f"Fetched {len(biometrics)} biometric readings from Strava")
-                return biometrics
-            else:
-                self.logger.error(f"Failed to fetch stats: {response.status_code}")
-                return []
-                
+                if "all_ride_totals" in stats:
+                    all_rides = stats["all_ride_totals"]
+                    biometrics.append(BiometricReading(
+                        reading_id=f"strava_alltime_rides_{date.today().strftime('%Y%m%d')}",
+                        athlete_id="default",
+                        timestamp=datetime.now(),
+                        metric="alltime_ride_distance",
+                        value=float(all_rides.get("distance", 0)),
+                        unit="meters",
+                        data_source="strava",
+                        raw_data={"all_time_rides": all_rides}
+                    ))
+                    
+                    if all_rides.get("calories"):
+                        biometrics.append(BiometricReading(
+                            reading_id=f"strava_alltime_rides_calories_{date.today().strftime('%Y%m%d')}",
+                            athlete_id="default",
+                            timestamp=datetime.now(),
+                            metric="alltime_ride_calories",
+                            value=float(all_rides.get("calories", 0)),
+                            unit="calories",
+                            data_source="strava",
+                            raw_data={"all_time_rides": all_rides}
+                        ))
+            
+            # 3. Get athlete zones (heart rate zones)
+            zones_response = requests.get(f"{self.base_url}/athlete/zones", headers=headers)
+            if zones_response.status_code == 200:
+                zones = zones_response.json()
+                if zones:
+                    # Add heart rate zones as biometric data
+                    for zone_type, zone_data in zones.items():
+                        if zone_data and len(zone_data) > 0:
+                            # Store zones as a special metric type
+                            biometrics.append(BiometricReading(
+                                reading_id=f"strava_zones_{zone_type}_{date.today().strftime('%Y%m%d')}",
+                                athlete_id="default",
+                                timestamp=datetime.now(),
+                                metric=f"heart_rate_zones_{zone_type}",
+                                value=float(len(zone_data)),  # Number of zones
+                                unit="zones",
+                                data_source="strava",
+                                raw_data={"zones": {zone_type: zone_data}}
+                            ))
+            
+            self.logger.info(f"Fetched {len(biometrics)} comprehensive biometric readings from Strava")
+            return biometrics
+            
         except Exception as e:
             self.logger.error(f"Error fetching biometrics: {e}")
             return []
@@ -293,7 +450,14 @@ class StravaConnector(BaseConnector):
     
     def get_supported_metrics(self) -> List[str]:
         """Get list of supported biometric metrics"""
-        return ["steps", "distance"]
+        return [
+            "weight", "height", "followers",
+            "recent_run_distance", "recent_run_calories",
+            "recent_ride_distance", "recent_ride_calories",
+            "alltime_run_distance", "alltime_run_calories",
+            "alltime_ride_distance", "alltime_ride_calories",
+            "heart_rate_zones"
+        ]
     
     def get_supported_sports(self) -> List[str]:
         """Get list of supported sport types"""

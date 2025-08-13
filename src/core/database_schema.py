@@ -189,7 +189,7 @@ class DatabaseSchemaManager:
                     
                     cursor.execute("""
                         CREATE INDEX IF NOT EXISTS idx_biometrics_athlete 
-                        ON biometrics(athlete_id, timestamp DESC)
+                        ON biometrics(athlete_id, date DESC)
                     """)
                     
                     conn.commit()

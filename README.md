@@ -7,7 +7,7 @@ A comprehensive fitness analytics platform that combines data from Strava activi
 ### Data Collection
 - **Strava Integration**: Automatic collection of workout data, heart rate, GPS, and performance metrics
 - **Garmin Connect Integration**: Workout data, biometrics, and device information from Garmin fitness devices
-- **VeSync Integration**: Smart scale data (weight, body composition), sleep tracking, and environmental monitoring
+- **Strava Profile Data**: Weight, height, and comprehensive workout analytics
 - **Real-time Updates**: Automated data collection with configurable refresh intervals
 
 ### Fitness Metrics & Analysis
@@ -46,9 +46,9 @@ A comprehensive fitness analytics platform that combines data from Strava activi
 - Monitor consistency in training habits
 
 ### 4. **Health Monitoring**
-- Track body composition changes (weight, body fat, muscle mass)
-- Monitor hydration levels and their impact on performance
-- Correlate environmental factors with workout quality
+- Track weight changes from Strava profile data
+- Monitor workout performance and trends
+- Correlate training load with recovery patterns
 
 ### 5. **Injury Prevention**
 - Early warning system for overtraining using ACWR
@@ -64,7 +64,6 @@ A comprehensive fitness analytics platform that combines data from Strava activi
 
 ### Prerequisites
 - Python 3.8+
-- VeSync account with smart devices
 - Strava API access (already configured in your workspace)
 - Garmin Connect API access (optional, for additional fitness data)
 
@@ -74,14 +73,9 @@ pip install -r requirements.txt
 ```
 
 ### 2. Configure Environment Variables
-Create a `.env` file in the project root with your VeSync credentials:
+Create a `.env` file in the project root with your Strava credentials:
 
 ```bash
-# VeSync API Credentials
-VESYNC_USERNAME=your_vesync_email@example.com
-VESYNC_PASSWORD=your_vesync_password
-VESYNC_TIMEZONE=America/Denver
-
 # Strava API Credentials (if not already configured)
 STRAVA_CLIENT_ID=your_strava_client_id
 STRAVA_CLIENT_SECRET=your_strava_client_secret
@@ -93,25 +87,24 @@ GARMIN_CLIENT_SECRET=your_garmin_client_secret
 GARMIN_REDIRECT_URI=http://localhost:8000/auth/garmin/callback
 ```
 
-### 3. Verify Device Compatibility
-The system supports various VeSync devices:
-- **Smart Scales**: ESWL01 and similar models for body composition
-- **Air Purifiers**: Environmental monitoring capabilities
-- **Sleep Tracking**: Compatible sleep monitoring devices
-- **Humidifiers**: Temperature and humidity sensors
+### 3. Verify Data Sources
+The system supports multiple fitness data sources:
+- **Strava**: Workout activities, GPS routes, heart rate, weight, height
+- **Garmin Connect**: Comprehensive fitness and health data (when approved)
+- **Future Integrations**: Fitbit, WHOOP, Oura Ring, Apple Health
 
 ## 🚀 Usage
 
-### 1. Collect VeSync Data
+### 1. Collect Strava Data
 ```bash
-python vesync_data_collector.py
+python test_strava_enhanced.py
 ```
 This will:
-- Connect to your VeSync account
-- Discover connected devices
-- Collect current and historical data
-- Save raw data to `data/raw/` directory
-- Generate summary reports in `data/processed/` directory
+- Connect to your Strava account
+- Fetch workout activities and biometric data
+- Pull weight and height from your profile
+- Save comprehensive fitness data
+- Generate enhanced analytics
 
 ### 2. Analyze Fitness Metrics
 ```bash
@@ -127,8 +120,8 @@ This will:
 ### 3. Automated Data Collection
 Set up cron jobs or scheduled tasks for regular data collection:
 ```bash
-# Collect VeSync data daily at 6 AM
-0 6 * * * cd /path/to/project && python vesync_data_collector.py
+# Collect Strava data daily at 6 AM
+0 6 * * * cd /path/to/project && python test_strava_enhanced.py
 
 # Generate fitness reports weekly
 0 8 * * 0 cd /path/to/project && python fitness_metrics_analyzer.py
@@ -157,34 +150,32 @@ Set up cron jobs or scheduled tasks for regular data collection:
 
 ## 🔍 Data Structure
 
-### VeSync Data
+### Strava Data
 ```json
 {
-  "devices": {
-    "device_id": {
-      "device_name": "Smart Scale",
-      "device_type": "ESWL01",
-      "connection_status": "online"
-    }
+  "profile": {
+    "weight": 75.5,
+    "height": 180.0,
+    "follower_count": 42
   },
-  "scale_data": [
+  "workouts": [
     {
-      "timestamp": "2025-01-20T08:00:00",
-      "weight": 75.5,
-      "body_fat": 12.3,
-      "muscle_mass": 45.2,
-      "water_percentage": 58.1
+      "id": "123456789",
+      "type": "Run",
+      "distance": 5000,
+      "duration": 1800,
+      "calories": 450,
+      "heart_rate_avg": 150,
+      "elevation_gain": 45
     }
   ],
-  "sleep_data": [
-    {
-      "timestamp": "2025-01-20T22:00:00",
-      "sleep_duration": 480,
-      "sleep_quality": 85,
-      "deep_sleep": 120,
-      "rem_sleep": 90
+  "statistics": {
+    "recent_run_totals": {
+      "distance": 25000,
+      "calories": 2250,
+      "count": 5
     }
-  ]
+  }
 }
 ```
 
@@ -239,11 +230,11 @@ The modular design allows easy addition of new fitness metrics:
 2. Add new calculation methods
 3. Integrate with existing reporting system
 
-### Custom Device Support
-To add support for new VeSync devices:
-1. Identify device type and capabilities
+### Custom Data Source Support
+To add support for new fitness platforms:
+1. Identify platform capabilities and API access
 2. Extend data collection methods
-3. Add device-specific data processing
+3. Add platform-specific data processing
 
 ### API Integration
 The system can be extended to integrate with:
@@ -256,15 +247,15 @@ The system can be extended to integrate with:
 
 ### Common Issues
 
-**VeSync Connection Failed**
-- Verify credentials in `.env` file
+**Strava Connection Failed**
+- Verify API credentials in `.env` file
 - Check internet connection
-- Ensure devices are online in VeSync app
+- Ensure OAuth tokens are valid
 
 **No Data Retrieved**
-- Check device compatibility
-- Verify device permissions
-- Review VeSync app settings
+- Check Strava profile has weight/height set
+- Verify workout activities are public
+- Review API permissions and scopes
 
 **Missing Metrics**
 - Ensure sufficient historical data
@@ -301,8 +292,7 @@ This project is licensed under the MIT License - see the LICENSE file for detail
 
 ## 🙏 Acknowledgments
 
-- VeSync for providing smart device APIs
-- Strava for comprehensive fitness data
+- Strava for comprehensive fitness data and profile information
 - The open-source community for data analysis libraries
 - Sports science researchers whose work informed this project
 

@@ -375,7 +375,7 @@ class DeduplicationEngine:
         # Group by date, metric type, and source
         grouped = {}
         for reading in readings:
-            key = (reading.date, reading.metric_type, reading.source)
+            key = (reading.timestamp.date(), reading.metric, reading.data_source)
             if key not in grouped:
                 grouped[key] = []
             grouped[key].append(reading)
@@ -398,23 +398,24 @@ class DeduplicationEngine:
         if len(readings) == 1:
             return readings[0]
         
-        # Sort by confidence (highest first)
-        sorted_readings = sorted(readings, key=lambda r: r.confidence, reverse=True)
+        # Sort by timestamp (most recent first)
+        sorted_readings = sorted(readings, key=lambda r: r.timestamp, reverse=True)
         primary = sorted_readings[0]
         
-        # Calculate weighted average of values
-        total_weight = sum(r.confidence for r in readings)
-        weighted_value = sum(r.value * r.confidence for r in readings) / total_weight
+        # Calculate simple average of values
+        weighted_value = sum(r.value for r in readings) / len(readings)
         
         # Create merged reading
         merged = BiometricReading(
-            date=primary.date,
-            metric_type=primary.metric_type,
+            reading_id=primary.reading_id,
+            athlete_id=primary.athlete_id,
+            timestamp=primary.timestamp,
+            metric=primary.metric,
             value=weighted_value,
             unit=primary.unit,
-            source=primary.source,
-            confidence=min(1.0, total_weight / len(readings)),  # Average confidence
-            external_id=primary.external_id
+            data_source=primary.data_source,
+            device_id=primary.device_id,
+            raw_data=primary.raw_data
         )
         
         return merged

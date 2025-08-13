@@ -107,11 +107,9 @@ class YearlyFitnessAnalyzer:
                             "access_token": os.getenv("STRAVA_ACCESS_TOKEN")
                         }
                     elif source == "vesync":
-                        config = {
-                            "username": os.getenv("VESYNC_USERNAME"),
-                            "password": os.getenv("VESYNC_PASSWORD"),
-                            "timezone": os.getenv("VESYNC_TIMEZONE", "America/Denver")
-                        }
+                        # VeSync integration removed - using Strava for weight data instead
+                        print(f"⚠️  VeSync integration removed. Weight data now comes from Strava profile.")
+                        continue
                     else:
                         config = {}
                     
@@ -458,7 +456,7 @@ class YearlyFitnessAnalyzer:
                 {
                     "type": "tip",
                     "title": "Data Sources Available",
-                    "message": "Your system is configured to sync with Strava and VeSync. Connect these accounts to automatically import your fitness data.",
+                    "message": "Your system is configured to sync with Strava. Connect your Strava account to automatically import your fitness data including weight and height from your profile.",
                     "recommendation": "Check your API credentials in the .env file and ensure proper authentication"
                 }
             ])
