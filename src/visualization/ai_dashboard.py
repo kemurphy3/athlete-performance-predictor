@@ -25,7 +25,7 @@ try:
     project_root = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
     sys.path.insert(0, project_root)
     
-    from src.core.multi_athlete_calorie_calculator import MultiAthleteCalorieCalculator
+    # Multi-athlete calorie calculator moved to private repository
     from src.core.data_ingestion import DataIngestionOrchestrator
     from src.connectors import get_connector, list_available_connectors
     from src.core.models import Workout, BiometricReading, UserProfile
@@ -214,7 +214,8 @@ class FitnessDashboard:
     
     def __init__(self, database_path: str = "data/athlete_performance.db"):
         self.db_path = database_path
-        self.calculator = MultiAthleteCalorieCalculator(database_path)
+        # Calorie calculator removed - proprietary logic
+        # self.calculator = MultiAthleteCalorieCalculator(database_path)
         self.orchestrator = DataIngestionOrchestrator(database_path)
         self.ai_coach = AIFitnessCoach()
         

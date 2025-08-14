@@ -5,12 +5,12 @@ Connectors package for Multi-Source Fitness Data Platform
 
 from .base import BaseConnector, ConnectorError, AuthenticationError, RateLimitError, APIError
 from .strava import StravaConnector
-from .vesync import VeSyncConnector
+# VeSync connector moved to private repository
 
 # Registry of available connectors
 AVAILABLE_CONNECTORS = {
     "strava": StravaConnector,
-    "vesync": VeSyncConnector,
+    # Additional proprietary connectors available in private repository
 }
 
 def get_connector(source_name: str, config: dict) -> BaseConnector:

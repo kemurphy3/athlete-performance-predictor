@@ -14,7 +14,7 @@ import json
 import uuid
 
 from .core.data_ingestion import DataIngestionOrchestrator
-from .core.multi_athlete_calorie_calculator import MultiAthleteCalorieCalculator
+# Multi-athlete calorie calculator moved to private repository
 from .core.database_schema import DatabaseSchemaManager
 from .connectors import get_connector, list_available_connectors
 from .core.models import Workout, BiometricReading
@@ -102,17 +102,7 @@ def authenticate(source):
                 click.echo("   The system will automatically refresh expired access tokens")
                 return
         
-        elif source == "vesync":
-            # For VeSync, we need username and password
-            username = os.getenv("VESYNC_USERNAME")
-            password = os.getenv("VESYNC_PASSWORD")
-            
-            if not username or not password:
-                click.echo("❌ Missing required VeSync credentials:")
-                click.echo("   - VESYNC_USERNAME (your VeSync account email)")
-                click.echo("   - VESYNC_PASSWORD (your VeSync account password)")
-                click.echo("\n💡 These are your VeSync app login credentials")
-                return
+        # Additional proprietary connectors removed
         
         click.echo("✅ Credentials configured")
         click.echo("�� Testing connection...")
@@ -162,12 +152,7 @@ def register_connector_after_auth(source: str):
                 "client_id": os.getenv("STRAVA_CLIENT_ID"),
                 "client_secret": os.getenv("STRAVA_CLIENT_SECRET")
             }
-        elif source == "vesync":
-            config = {
-                "username": os.getenv("VESYNC_USERNAME"),
-                "password": os.getenv("VESYNC_PASSWORD"),
-                "timezone": os.getenv("VESYNC_TIMEZONE", "America/Denver")
-            }
+        # Additional proprietary connector configs removed
         
         # Register the connector
         orchestrator.register_connector(source, config)
@@ -194,12 +179,7 @@ async def test_connection(source: str):
                 "client_id": os.getenv("STRAVA_CLIENT_ID"),
                 "client_secret": os.getenv("STRAVA_CLIENT_SECRET")
             }
-        elif source == "vesync":
-            config = {
-                "username": os.getenv("VESYNC_USERNAME"),
-                "password": os.getenv("VESYNC_PASSWORD"),
-                "timezone": os.getenv("VESYNC_TIMEZONE", "America/Denver")
-            }
+        # Additional proprietary connector configs removed
         
         connector = get_connector(source, config)
         
@@ -320,12 +300,7 @@ def register_available_connectors(orchestrator: DataIngestionOrchestrator):
                     click.echo(f"✅ Registered {source} connector")
                 else:
                     click.echo(f"⚠️ {source} connector not configured (missing CLIENT_ID or CLIENT_SECRET)")
-            elif source == "vesync":
-                if config.get("username") and config.get("password"):
-                    orchestrator.register_connector(source, config)
-                    click.echo(f"✅ Registered {source} connector")
-                else:
-                    click.echo(f"⚠️ {source} connector not configured (missing username or password)")
+            # Additional proprietary connectors removed
             else:
                 if any(config.values()):  # For other connectors
                     orchestrator.register_connector(source, config)
@@ -604,9 +579,10 @@ def add_athlete(name: str, email: Optional[str] = None,
         db_manager = DatabaseSchemaManager('data/athlete_performance.db')
         db_manager.initialize_schema()
         
-        # Create athlete using calculator
-        calculator = MultiAthleteCalorieCalculator('data/athlete_performance.db')
-        athlete_id = calculator.create_athlete(name, email)
+        # Athlete creation functionality moved to private repository
+        # For demo purposes, generate a simple UUID
+        athlete_id = str(uuid.uuid4())
+        click.echo("Note: Full athlete creation logic in private repository")
         
         # Update profile if additional data provided
         if any([age, gender, weight_kg]):
@@ -631,45 +607,8 @@ def add_athlete(name: str, email: Optional[str] = None,
 @click.argument('end_date')
 def calculate_calories(athlete_id: str, start_date: str, end_date: str):
     """Calculate calories for an athlete's workouts"""
-    try:
-        calculator = MultiAthleteCalorieCalculator('data/athlete_performance.db')
-        
-        # Get workouts for athlete
-        workouts = calculator.get_athlete_workouts(athlete_id, start_date, end_date)
-        
-        if not workouts:
-            click.echo(f"❌ No workouts found for athlete {athlete_id} between {start_date} and {end_date}")
-            return
-        
-        results = []
-        total_calories = 0
-        
-        click.echo(f"🏃‍♂️ Calculating calories for {len(workouts)} workouts...")
-        click.echo("=" * 60)
-        
-        for workout in workouts:
-            result = calculator.calculate_for_athlete(workout, athlete_id)
-            results.append({
-                'date': workout.start_time.strftime('%Y-%m-%d'),
-                'sport': workout.sport,
-                'duration': f"{workout.duration // 60}m",
-                'calories': result.calories,
-                'method': result.method,
-                'confidence': result.confidence
-            })
-            total_calories += result.calories
-        
-        # Display results
-        for result in results:
-            click.echo(f"{result['date']} | {result['sport']:15} | {result['duration']:5} | "
-                      f"{result['calories']:4} cal | {result['method']:20} | {result['confidence']:.2f}")
-        
-        click.echo("=" * 60)
-        click.echo(f"📊 Total Calories: {total_calories:,} kcal")
-        click.echo(f"📈 Average Confidence: {sum(r['confidence'] for r in results) / len(results):.2f}")
-        
-    except Exception as e:
-        click.echo(f"❌ Failed to calculate calories: {e}")
+    click.echo("❌ Calorie calculation functionality moved to private repository")
+    click.echo("This feature is available in the full version of the platform")
 
 @cli.command()
 def list_athletes():

@@ -12,7 +12,7 @@ import requests
 
 from .base import BaseConnector, ConnectorError, AuthenticationError, RateLimitError, APIError
 from ..core.models import Workout, BiometricReading
-from ..core.calorie_calculator import EnhancedCalorieCalculator
+# Calorie calculation moved to private repository
 
 logger = logging.getLogger(__name__)
 
@@ -27,8 +27,7 @@ class StravaConnector(BaseConnector):
         self.client_id = config.get("client_id")
         self.client_secret = config.get("client_secret")
         
-        # Initialize calorie calculator
-        self.calorie_calculator = EnhancedCalorieCalculator()
+        # Calorie calculator initialization removed - proprietary logic
         
     async def authenticate(self) -> bool:
         """Authenticate with Strava using stored tokens"""
@@ -158,43 +157,14 @@ class StravaConnector(BaseConnector):
         else:
             sport_category = "other"
         
-        # Calculate calories if not provided by Strava
+        # Use calories from Strava if provided
         raw_calories = activity.get("calories")
         if raw_calories and raw_calories > 0:
             calculated_calories = raw_calories
         else:
-            # Use enhanced calorie calculator to estimate calories
-            # Create a temporary workout object for calculation
-            temp_workout = Workout(
-                workout_id=str(activity["id"]),
-                athlete_id="default",  # Use default athlete for now
-                start_time=start_time,
-                end_time=end_time,
-                duration=activity["elapsed_time"],
-                sport=activity.get("type", "Unknown"),
-                sport_category=sport_category,
-                distance=activity.get("distance"),
-                calories=raw_calories,
-                heart_rate_avg=activity.get("average_heartrate"),
-                heart_rate_max=activity.get("max_heartrate"),
-                elevation_gain=activity.get("total_elevation_gain"),
-                power_avg=activity.get("average_watts"),
-                cadence_avg=activity.get("average_cadence"),
-                training_load=None,
-                perceived_exertion=None,
-                has_gps=bool(activity.get("start_latlng")),
-                route_hash=None,
-                gps_data={"start_latlng": activity.get("start_latlng")} if activity.get("start_latlng") else {},
-                data_source="strava",
-                external_ids={"strava": str(activity["id"])},
-                raw_data=activity,
-                data_quality_score=0.8,
-                ml_features_extracted=False,
-                plugin_data={}
-            )
-            
-            # Calculate calories using enhanced calculator
-            calculated_calories = self.calorie_calculator.calculate_enhanced(temp_workout).calories
+            # Calorie calculation functionality moved to private repository
+            # For demo purposes, use a simple estimate based on duration
+            calculated_calories = int(activity["elapsed_time"] / 60 * 8)  # ~8 cal/min placeholder
         
         return Workout(
             workout_id=str(activity["id"]),

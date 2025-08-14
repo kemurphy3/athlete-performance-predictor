@@ -14,7 +14,7 @@ import time
 
 from .base import BaseConnector, ConnectorError, AuthenticationError, RateLimitError, APIError
 from ..core.models import Workout, BiometricReading
-from ..core.calorie_calculator import EnhancedCalorieCalculator
+# Calorie calculation moved to private repository
 
 logger = logging.getLogger(__name__)
 
@@ -38,8 +38,7 @@ class GarminConnectConnector(BaseConnector):
             "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36"
         })
         
-        # Initialize calorie calculator
-        self.calorie_calculator = EnhancedCalorieCalculator()
+        # Calorie calculator initialization removed - proprietary logic
         
         # Garmin-specific rate limiting
         self.min_request_interval = 1.0  # Garmin is more restrictive
@@ -187,14 +186,10 @@ class GarminConnectConnector(BaseConnector):
             # Calculate calories if not provided
             calories = activity.get("calories", 0)
             if not calories and activity.get("duration"):
-                # Use our calorie calculator as fallback
+                # Calorie calculation functionality moved to private repository
+                # For demo purposes, use a simple estimate
                 duration_minutes = activity.get("duration", 0) / 1000 / 60  # Convert from milliseconds
-                calories = self.calorie_calculator.calculate_calories(
-                    sport=sport,
-                    duration_minutes=duration_minutes,
-                    weight_kg=70,  # Default weight, should be configurable
-                    intensity="moderate"
-                )
+                calories = int(duration_minutes * 8)  # ~8 cal/min placeholder
             
             workout = Workout(
                 id=f"garmin_{activity.get('activityId', 'unknown')}",
