@@ -2,7 +2,7 @@
 
 A comprehensive fitness analytics platform that combines data from Strava activities and VeSync smart devices to provide advanced performance insights, recovery analysis, and fitness predictions.
 
-## 🚀 Features
+## Features
 
 ### Data Collection
 - **Strava Integration**: Automatic collection of workout data, heart rate, GPS, and performance metrics
@@ -28,7 +28,7 @@ A comprehensive fitness analytics platform that combines data from Strava activi
 - **Comprehensive Reports**: Detailed analysis reports with actionable insights
 - **Trend Analysis**: Long-term performance and recovery trend identification
 
-## 📊 What You Can Do With This Data
+## What You Can Do With This Data
 
 ### 1. **Training Load Management**
 - Monitor daily/weekly training volume using TRIMP scores
@@ -60,7 +60,7 @@ A comprehensive fitness analytics platform that combines data from Strava activi
 - Track progress toward specific performance targets
 - Adjust training plans based on data-driven insights
 
-## 🛠️ Installation & Setup
+## Installation & Setup
 
 ### Prerequisites
 - Python 3.8+
@@ -93,7 +93,7 @@ The system supports multiple fitness data sources:
 - **Garmin Connect**: Comprehensive fitness and health data (when approved)
 - **Future Integrations**: Fitbit, WHOOP, Oura Ring, Apple Health
 
-## 🚀 Usage
+## Usage
 
 ### 1. Collect Strava Data
 ```bash
@@ -127,7 +127,7 @@ Set up cron jobs or scheduled tasks for regular data collection:
 0 8 * * 0 cd /path/to/project && python fitness_metrics_analyzer.py
 ```
 
-## 📈 Key Metrics Explained
+## Key Metrics Explained
 
 ### TRIMP (Training Impulse)
 - **Zone 1** (<120 bpm): Recovery/light training
@@ -148,7 +148,7 @@ Set up cron jobs or scheduled tasks for regular data collection:
 - **Body Composition Impact**: Weight changes and hydration status
 - **Sleep Quality**: Rest and recovery correlation
 
-## 🔍 Data Structure
+## Data Structure
 
 ### Strava Data
 ```json
@@ -200,7 +200,7 @@ Set up cron jobs or scheduled tasks for regular data collection:
 }
 ```
 
-## 📊 Sample Insights & Use Cases
+## Sample Insights & Use Cases
 
 ### 1. **Overtraining Detection**
 - Monitor ACWR trends over time
@@ -222,7 +222,7 @@ Set up cron jobs or scheduled tasks for regular data collection:
 - Analyze environmental impact on workouts
 - Plan training cycles based on historical data
 
-## 🔧 Customization
+## Customization
 
 ### Adding New Metrics
 The modular design allows easy addition of new fitness metrics:
@@ -243,7 +243,7 @@ The system can be extended to integrate with:
 - Google Fit
 - Other fitness tracking platforms
 
-## 📝 Troubleshooting
+## Troubleshooting
 
 ### Common Issues
 
@@ -268,14 +268,14 @@ Enable detailed logging by modifying log levels in the scripts:
 logging.basicConfig(level=logging.DEBUG)
 ```
 
-## 🤝 Contributing
+## Contributing
 
 1. Fork the repository
 2. Create a feature branch
 3. Add tests for new functionality
 4. Submit a pull request
 
-## 🛠️ Development Approach
+## Development Approach
 
 This project embraces modern development practices including:
 - **AI-Assisted Development**: Leveraging AI tools to accelerate development while maintaining code quality
@@ -286,17 +286,17 @@ This project embraces modern development practices including:
 
 I believe in using the best tools available to deliver value efficiently. See [CONTRIBUTIONS.md](CONTRIBUTIONS.md) for detailed attribution.
 
-## 📄 License
+## License
 
 This project is licensed under the MIT License - see the LICENSE file for details.
 
-## 🙏 Acknowledgments
+## Acknowledgments
 
 - Strava for comprehensive fitness data and profile information
 - The open-source community for data analysis libraries
 - Sports science researchers whose work informed this project
 
-## 🔒 Privacy & Security
+## Privacy & Security
 
 We take your privacy seriously. Our platform collects sensitive fitness and health data, and we're committed to protecting it:
 
@@ -306,7 +306,7 @@ We take your privacy seriously. Our platform collects sensitive fitness and heal
 - **Data Encryption**: All data encrypted in transit and at rest
 - **User Control**: Full control over your data and privacy settings
 
-## 📞 Support
+## Support
 
 For issues and questions:
 1. Check the troubleshooting section
@@ -317,4 +317,4 @@ For issues and questions:
 
 ---
 
-**Ready to optimize your fitness performance? Start collecting data and unlock insights today!** 🏃‍♂️💪
+**Ready to optimize your fitness performance? Start collecting data and unlock insights today!**
