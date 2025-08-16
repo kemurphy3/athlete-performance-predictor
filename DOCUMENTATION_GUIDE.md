@@ -1,6 +1,6 @@
 # Documentation Quick Reference Guide
 
-## 🚀 Start Here Based on Your Need
+## Start Here Based on Your Need
 
 ### "I'm starting fresh - what is Vector?"
 Read in this order:
@@ -28,7 +28,7 @@ Read in this order:
 1. **`CURSOR_REPO_MIGRATION_PROMPT.md`** - Instructions for repository reorganization
 2. **Portfolio strategy** section in `DEVELOPMENT_PLAN_2025_2028.md`
 
-## 📅 Key Documents by Project Phase
+## Key Documents by Project Phase
 
 ### Phase 1: Foundation (Now - Feb 2026)
 - Primary: `DEVELOPMENT_PLAN_2025_2028.md`
@@ -43,7 +43,7 @@ Read in this order:
 - Vision: `VECTOR_COMPLETE_VISION.md`
 - Exit strategy sections in various docs
 
-## 🔄 Living Documents (Need Regular Updates)
+## Living Documents (Need Regular Updates)
 
 1. **`STATUS_UPDATE_2025_01.md`** - Update monthly with progress
 2. **`IMPLEMENTATION_PROGRESS.md`** - Update as features complete

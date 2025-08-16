@@ -1,26 +1,26 @@
 # Vector Go-to-Market Strategy: Adaptive Intelligence
 
-## 🎯 Executive Summary
+## Executive Summary
 
 Vector is creating a new category: **Adaptive Training Intelligence**. We're not competing with fitness trackers—we're building the first platform that understands athletes have lives outside of training and helps them succeed anyway.
 
 **Core Positioning**: "The only fitness intelligence that adapts to your life, not the other way around."
 
-## 📊 Market Position
+## Market Position
 
 ### We're NOT Another:
-- ❌ Fitness tracker (backward-looking)
-- ❌ Training plan app (rigid prescriptions)
-- ❌ AI coach (preachy automation)
-- ❌ Recovery app (single dimension)
+- Fitness tracker (backward-looking)
+- Training plan app (rigid prescriptions)
+- AI coach (preachy automation)
+- Recovery app (single dimension)
 
 ### We ARE:
-- ✅ Adaptive training intelligence
-- ✅ Life-aware performance optimization
-- ✅ Conversational decision support
-- ✅ The co-pilot for real athletes with real lives
+- Adaptive training intelligence
+- Life-aware performance optimization
+- Conversational decision support
+- The co-pilot for real athletes with real lives
 
-## 🚀 The Breakthrough Insight
+## The Breakthrough Insight
 
 **The Problem Everyone Has But No One Solves:**
 "I had a 60-minute workout planned but only have 35 minutes."
@@ -36,7 +36,7 @@ Instant adaptation with intelligence:
 - Rebalanced weekly plan
 - No guilt, just progress
 
-## 📈 Go-to-Market Phases
+## Go-to-Market Phases
 
 ### Phase 1: Product-Market Fit (Months 1-3)
 **Target**: 50 "Life Athletes" - Busy professionals who train seriously

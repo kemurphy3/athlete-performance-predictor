@@ -1,12 +1,12 @@
 # Vector: Complete Project Vision & Strategy
 
-## 🎯 Executive Summary
+## Executive Summary
 
 **Vector** is an AI-powered performance intelligence platform that analyzes data from all fitness devices to provide daily training recommendations with both direction (what to train) and magnitude (how hard to push). Unlike traditional fitness trackers that show where you've been, Vector shows where to go.
 
 **Core Value Proposition**: "Every workout has direction and magnitude. We calculate both."
 
-## 📊 Current State vs. Vision
+## Current State vs. Vision
 
 ### Where We Are (August 2025)
 - **Codebase**: athlete-performance-predictor
@@ -19,7 +19,7 @@
 - **Holistic Training Platform**: Integrates strength, cardio, yoga, recovery into unified recommendations
 - **Adaptive Life Integration**: Adjusts to user's actual life, not theoretical perfect training
 
-## 🚀 What Makes Vector Unique
+## What Makes Vector Unique
 
 ### 1. **Mathematical Precision**
 - Every recommendation has direction (type of training) and magnitude (intensity)
